@@ -56,10 +56,12 @@ jobs:
           echo '```bash' >> "$NOTES"
           echo "curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/$VERSION/install.sh | bash" >> "$NOTES"
           echo '```' >> "$NOTES"
+          echo "" >> "$NOTES"
+          echo 'Windows: 以管理员身份运行 install.ps1' >> "$NOTES"
 
           gh release create "$VERSION" \
             --title "moli-skills $VERSION" \
             --notes-file "$NOTES" \
-            ./install.sh ./requirements.txt
+            ./install.sh ./requirements.txt ./install.ps1
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -24,6 +24,12 @@
 curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
 ```
 
+Windows（以管理员身份运行 PowerShell）：
+
+```powershell
+iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.ps1'))
+```
+
 ### 各平台适配
 
 安装后，各平台自动注册：
