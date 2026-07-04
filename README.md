@@ -18,23 +18,21 @@
 帮我安装 https://github.com/geek-fun/moli-skills
 ```
 
-任何 agent（OpenCode、Claude Code、Cursor 等）都会读取本说明，自动完成：克隆 → 装依赖 → 配环境。无需手动操作。
-
-手动安装：
+任何 agent 都会读取本说明，自动完成。也可手动运行：
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
 ```
 
-### Agent 适配说明
+### 各平台适配
 
-各平台适配文件已就绪，agent 安装时会自动参考：
+安装后，各平台自动注册：
 
-| Agent | 适配文件 | 作用 |
+| Agent | 位置 | 说明 |
 |---|---|---|
-| OpenCode | `opencode/SKILL.md` | skill 加载入口 |
-| Claude Code | `claude/plugin.json` | skill 加载入口 |
-| Cursor / Windsurf | `cursor/rules/` | 规则触发配置 |
+| OpenCode | `~/.config/opencode/skills/moli-cn-copyright/` | skill 即可用 |
+| Claude Code | `~/.claude/plugins/moli-skills/` | 运行 `claude --plugin ~/.claude/plugins/moli-skills` |
+| Cursor / Windsurf | `cursor/rules/` | 复制到项目 `.cursor/rules/` |
 
 ## 使用：软著申请
 
@@ -76,10 +74,14 @@ moli-skills/
 ├── opencode/               ← OpenCode 适配层
 │   └── SKILL.md
 ├── claude/                 ← Claude Code 适配层
-│   ├── plugin.json
+│   ├── .claude-plugin/
+│   │   └── plugin.json
 │   └── skills/
+│       └── copyright/
+│           └── SKILL.md
 ├── cursor/                 ← Cursor / Windsurf 适配层
 │   └── rules/
+│       └── moli-cn-copyright.mdc
 ├── moli-cn-copyright/      ← 核心脚本与规范
 │   ├── scripts/            ← Python 辅助脚本
 │   ├── references/         ← 规范文档

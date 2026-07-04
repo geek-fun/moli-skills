@@ -1,12 +1,7 @@
 ---
 name: moli-cn-copyright
-description: 生成中国软件著作权（软著）全套申请材料。用户提到"软著"、"软件著作权"、"版权登记"、"软著申请"、"生成绩软著材料"时使用。AI 自动分析项目代码，生成程序鉴别材料（源代码PDF）和文档鉴别材料（用户操作手册）。
-license: Apache-2.0
-compatibility: opencode
-metadata:
-  author: WENTSEN (Kunming) Technology Co., Ltd.
-  version: "1.0.0"
-  category: intellectual-property
+description: 生成中国软件著作权（软著）全套申请材料。用户提到"软著"、"软件著作权"、"版权登记"、"软著申请"时使用。AI 自动分析项目代码，生成程序鉴别材料（源代码PDF）和文档鉴别材料（用户操作手册）。
+version: 1.0.0
 ---
 
 # moli-cn-copyright

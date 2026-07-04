@@ -1,0 +1,11 @@
+{
+  "name": "moli-skills",
+  "version": "1.0.0",
+  "description": "生成中国软件著作权（软著）全套申请材料。AI 自动分析项目代码，生成程序鉴别材料（源代码PDF）和文档鉴别材料（用户操作手册）。",
+  "author": {
+    "name": "WENTSEN (Kunming) Technology Co., Ltd."
+  },
+  "repository": "https://github.com/geek-fun/moli-skills",
+  "license": "Apache-2.0",
+  "keywords": ["软著", "软件著作权", "版权登记", "知识产权"]
+}
