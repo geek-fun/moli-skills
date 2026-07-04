@@ -437,29 +437,38 @@ class CopyrightValidator:
         ))
 
     def _rule_manual_has_screenshots(self):
-        """R-MA-03: 有截图或截图预留"""
+        """R-MA-03: 检查截图是否已添加（查找占位残留 + 实际图片）"""
         if not self._manual_docx_path:
             return
         text = self._read_docx_text(self._manual_docx_path)
-        has_screenshot_markers = '截图预留' in text or '截图：' in text or '截图:' in text
-        # Check for images in docx
+        
+        # 检查是否还有未替换的占位文字
+        remaining_placeholders = len(re.findall(r'【截图[：:].*?】', text))
+        
+        # 检查是否有实际图片
+        has_images = False
         try:
             from docx import Document
             doc = Document(str(self._manual_docx_path))
             has_images = len(doc.inline_shapes) > 0
         except Exception:
-            has_images = False
-
-        if has_images or has_screenshot_markers:
+            pass
+        
+        if has_images:
             passed = True
-            detail = "有截图" if has_images else "有截图预留文字 ✅"
+            detail = f"已插入 {len(doc.inline_shapes)} 张实际截图"
+            if remaining_placeholders > 0:
+                detail += f" | ⚠️ 仍有 {remaining_placeholders} 处占位文字未替换"
+        elif remaining_placeholders > 0:
+            passed = False
+            detail = f"❌ 还有 {remaining_placeholders} 处截图占位未替换为实际图片"
         else:
             passed = False
-            detail = "❌ 既无真实截图也无截图预留占位文字"
-
+            detail = "❌ 既无截图也无占位文字（请确认文档内容）"
+        
         self.results.append(CheckResult(
             "R-MA-03", passed, "error",
-            "操作手册包含截图或截图预留",
+            "截图已添加（占位已替换为实际图片）",
             detail
         ))
 
