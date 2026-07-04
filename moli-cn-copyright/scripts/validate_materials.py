@@ -795,6 +795,150 @@ class CopyrightValidator:
         except Exception as e:
             self.results.append(CheckResult("R-MA-09", True, "info", "页眉页码检查", f"无法检查: {e}"))
 
+    def _rule_docx_toc_aligned(self):
+        """R-MA-10: 目录与正文标题对齐（目录已更新）"""
+        if not self._manual_docx_path:
+            return
+        try:
+            import zipfile
+            from docx import Document
+            doc = Document(str(self._manual_docx_path))
+            
+            # 收集文档中的实际标题
+            actual_headings = []
+            for p in doc.paragraphs:
+                if p.style.name.startswith('Heading'):
+                    actual_headings.append(p.text.strip())
+            
+            # 收集 TOC 中的条目
+            toc_entries = []
+            with zipfile.ZipFile(self._manual_docx_path, 'r') as z:
+                if 'word/document.xml' in z.namelist():
+                    xml = z.read('word/document.xml').decode('utf-8', errors='ignore')
+                    import re
+                    # 找到 TOC 结果区（separate 和 end 之间的文本）
+                    toc_match = re.search(r'fldCharType="separate".*?fldCharType="end"', xml, re.DOTALL)
+                    if toc_match:
+                        toc_text = toc_match.group()
+                        # 提取标题文本
+                        toc_entries = re.findall(r'<w:t[^>]*>([^<]+)</w:t>', toc_text)
+                        toc_entries = [t.strip() for t in toc_entries if t.strip()]
+            
+            if not actual_headings:
+                self.results.append(CheckResult("R-MA-10", True, "info", "目录与标题对齐检查", "文档中未找到标题"))
+                return
+            
+            if not toc_entries:
+                self.results.append(CheckResult("R-MA-10", False, "error", "目录与标题对齐检查", "❌ 未找到目录条目，请在Word中更新目录"))
+                return
+            
+            # 比较（放宽匹配：只要标题文本出现在目录中即视为已更新）
+            missing = []
+            for h in actual_headings:
+                if h and len(h) > 2:
+                    found = any(h in entry or entry in h for entry in toc_entries)
+                    if not found:
+                        missing.append(h)
+            
+            if missing:
+                passed = False
+                detail = f"❌ {len(missing)} 个标题在目录中缺失: {'; '.join(missing[:5])}（请在Word中右键目录→更新域）"
+            else:
+                passed = True
+                detail = f"✅ 目录 {len(toc_entries)} 项与标题对齐"
+            
+            self.results.append(CheckResult("R-MA-10", passed, "error", "目录与正文标题对齐（目录已更新）", detail))
+        except Exception as e:
+            self.results.append(CheckResult("R-MA-10", True, "info", "目录对齐检查", f"无法检查: {e}"))
+
+    def _rule_docx_structure(self):
+        """R-MA-11: 文档结构正确（封面→目录→正文各自分页）"""
+        if not self._manual_docx_path:
+            return
+        try:
+            import zipfile, re
+            with zipfile.ZipFile(self._manual_docx_path, 'r') as z:
+                xml = z.read('word/document.xml').decode('utf-8', errors='ignore')
+            
+            body = xml[xml.find('<w:body>'):xml.find('</w:body>')] if '<w:body>' in xml else xml
+            paras = re.findall(r'<w:p[ >].*?</w:p>', body, re.DOTALL)
+            
+            # 找出现的顺序：封面内容 → 分页符 → 目录 → 分页符 → 正文标题
+            found_first_pb = False
+            found_mulu = False
+            found_second_pb = False
+            found_body_start = False
+            
+            for p in paras:
+                text = re.sub(r'<[^>]+>', '', p)[:30]
+                has_pb = 'w:type="page"' in p
+                
+                if not found_first_pb and has_pb:
+                    found_first_pb = True
+                    continue
+                if found_first_pb and not found_mulu and ('目录' in text or 'TOC' in text):
+                    found_mulu = True
+                    continue
+                if found_mulu and not found_second_pb and has_pb:
+                    found_second_pb = True
+                    continue
+                if found_second_pb and not found_body_start and ('一、' in text or '说明' in text or 'Heading' in p):
+                    found_body_start = True
+                    # no break, want to check more
+            
+            issues = []
+            if not found_first_pb: issues.append("封面后缺分页符")
+            if not found_mulu: issues.append("未找到目录")
+            if not found_second_pb: issues.append("目录后缺分页符")
+            if not found_body_start: issues.append("未找到正文起始标题")
+            
+            passed = len(issues) == 0
+            detail = "✅ 封面→目录→正文结构正确" if passed else "❌ " + ", ".join(issues)
+            self.results.append(CheckResult("R-MA-11", passed, "error", "文档结构（封面→目录→正文各自分页）", detail))
+        except Exception as e:
+            self.results.append(CheckResult("R-MA-11", True, "info", "文档结构检查", f"无法检查: {e}"))
+
+    def _rule_file_naming(self):
+        """R-CO-03: 文件名规范"""
+        workdir = Path(self.workdir)
+        issues = []
+        # 检查 PDF - 排除临时文件
+        pdfs = [f for f in workdir.glob('*.pdf') if not f.name.startswith('~') and not f.name.startswith('.~')]
+        for pdf in pdfs:
+            stem = pdf.stem
+            if self.software_name:
+                sn = self.software_name.replace(' ', '')
+                if sn not in stem.replace(' ', ''):
+                    issues.append(f"PDF文件名缺软件名称: {pdf.name}")
+            if '源代码' not in stem and '源码' not in stem:
+                issues.append(f"PDF文件名应含「源代码」: {pdf.name}")
+        # 检查 DOCX
+        docxs = [f for f in workdir.glob('*.docx') if not f.name.startswith('~') and not f.name.startswith('.~')]
+        for docx in docxs:
+            stem = docx.stem
+            if self.software_name:
+                sn = self.software_name.replace(' ', '')
+                if sn not in stem.replace(' ', ''):
+                    issues.append(f"DOCX文件名缺软件名称: {docx.name}")
+            if '操作手册' not in stem and '用户手册' not in stem and '手册' not in stem:
+                issues.append(f"DOCX文件名应含「操作手册」: {docx.name}")
+        # 检查 DOCX
+        docxs = list(workdir.glob('*.docx'))
+        for docx in docxs:
+            name = docx.name
+            stem = docx.stem
+            if self.software_name:
+                sn_chars = self.software_name.replace(' ', '')
+                name_clean = stem.replace(' ', '')
+                if sn_chars not in name_clean:
+                    issues.append(f"DOCX文件名缺软件名称: {name}")
+            if '操作手册' not in stem and '用户手册' not in stem and '手册' not in stem:
+                issues.append(f"DOCX文件名应含「操作手册」: {name}")
+        
+        passed = len(issues) == 0
+        detail = "✅ 文件名规范" if passed else "❌ " + "; ".join(issues[:3])
+        self.results.append(CheckResult("R-CO-03", passed, "warning", "文件名规范（含软件名称+文档类型）", detail))
+
     def _rule_app_date_logic(self):
         """R-AP-05: 日期逻辑正确（开发完成 ≤ 首次发表日期 < 申请日期）"""
         if not self._application_txt_path:
@@ -988,6 +1132,8 @@ class CopyrightValidator:
             self._rule_manual_formatting()
             self._rule_docx_has_toc_field()
             self._rule_docx_has_page_fields()
+            self._rule_docx_toc_aligned()
+            self._rule_docx_structure()
 
         # Phase 3: Application
         self._rule_application_exists()
@@ -999,6 +1145,7 @@ class CopyrightValidator:
         # Phase 4: Consistency
         self._rule_consistency_name_across_docs()
         self._rule_consistency_version_across_docs()
+        self._rule_file_naming()
 
         # Phase 5: 2026 Policies
         self._rule_policy_ai_declaration()
