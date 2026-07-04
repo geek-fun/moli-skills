@@ -56,6 +56,14 @@ if [ ! -L "$AG_DIR/SKILL.md" ]; then
     echo -e "  ${GREEN}✅${NC} OpenCode: /moli-cn-copyright"
 fi
 
+# OpenCode validate command
+AG_VAL_DIR="$HOME/.agents/skills/moli-cn-copyright-validate"
+if [ ! -L "$AG_VAL_DIR/SKILL.md" ]; then
+    mkdir -p "$(dirname "$AG_VAL_DIR")"
+    ln -sfn "$INSTALL_DIR/opencode/validate" "$AG_VAL_DIR"
+    echo -e "  ${GREEN}✅${NC} OpenCode: /moli-cn-copyright-validate"
+fi
+
 # OpenCode (alt): symlink to ~/.config/opencode/skills/moli-cn-copyright/
 OC_DIR="$HOME/.config/opencode/skills/moli-cn-copyright"
 if [ ! -L "$OC_DIR/SKILL.md" ]; then
