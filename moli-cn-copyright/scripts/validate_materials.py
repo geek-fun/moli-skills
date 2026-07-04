@@ -992,35 +992,30 @@ class CopyrightValidator:
             print("❌ 未找到操作手册DOCX文件")
             return 0
         try:
-            import zipfile, shutil, re
+            import re
             from docx import Document
             doc = Document(str(self._manual_docx_path))
             fix_count = 0
             
-            # 中文字后的半角标点 → 全角
-            punct_map = {
-                ',': '，', ':': '：', ';': '；',
-                '!': '！', '?': '？',
-            }
-            # 句点特殊处理：区分句号和小数点
-            # 中文字后的 . → 。
-            # 数字后的 . → 保留（小数点）
-            
             for para in doc.paragraphs:
                 for run in para.runs:
                     text = run.text
+                    if not text:
+                        continue
                     new_text = text
                     # 中文字后的逗号冒号分号感叹号问号
-                    for half, full in punct_map.items():
+                    for half, full in [(',','，'),(':','：'),(';','；'),('!','！'),('?','？')]:
                         new_text = re.sub(f'([\\u4e00-\\u9fff]){re.escape(half)}', f'\\1{full}', new_text)
-                    # 中文字后的句点（排除数字后的）
+                    # 中文字后的句点（排除数字后的小数点）
                     new_text = re.sub(r'([\u4e00-\u9fff])\.(?!\d)', r'\1。', new_text)
+                    # 半角引号包围中文 → 全角引号（左"中 → "中，右中" → 中"）
+                    new_text = re.sub(r'(?<=^|[^>\w])"([\u4e00-\u9fff])', '\u201c\\1', new_text)
+                    new_text = re.sub(r'([\u4e00-\u9fff])"(?=$|[^<\w])', '\\1\u201d', new_text)
                     
                     if new_text != text:
                         fix_count += 1
                         run.text = new_text
             
-            # 保存
             doc.save(str(self._manual_docx_path))
             return fix_count
         except Exception as e:
