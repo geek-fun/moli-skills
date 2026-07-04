@@ -473,32 +473,31 @@ class CopyrightValidator:
         ))
 
     def _rule_manual_page_count(self):
-        """R-MA-04: 页数 ≥ 15页"""
+        """R-MA-04: 页数 ≥ 15 页（硬性要求，不满足需补充内容）"""
         if not self._manual_docx_path:
             return
         try:
             from docx import Document
             doc = Document(str(self._manual_docx_path))
-            # Rough page estimate: count explicit page breaks + estimate from content
             text = "\n".join(p.text for p in doc.paragraphs)
-            # Count page breaks (w:br with w:type="page")
             page_breaks_xml = str(doc.element.xml).count('w:type="page"')
-            # Also count explicit section breaks
             section_breaks = max(0, len(doc.sections) - 1)
-            # Estimate: A4 with 小四 12pt / 1.5 line spacing + headings + tables
-            # Tables add significant content not captured in paragraph text
             table_rows = sum(len(t.rows) for t in doc.tables)
-            table_chars = table_rows * 40  # rough estimate
+            table_chars = table_rows * 40
             total_text = len(text) + table_chars
-            # Small font, dense content: ~1000 chars per page
-            # plus tables which take more space visually
             est_content_pages = max(1, total_text // 800)
             total_est = max(page_breaks_xml + section_breaks + 1, est_content_pages)
             passed = total_est >= 15
             self.results.append(CheckResult(
-                "R-MA-04", passed, "warning",
-                f"操作手册页数 ≥ 15页（当前估算: {total_est}页）",
-                f"估算页数: {total_est} {'✅' if passed else '❌ 不足15页，请补充内容'}"
+                "R-MA-04", passed, "error",
+                f"操作手册页数 ≥ 15页（硬性要求，当前估算: {total_est}页）",
+                f"估算页数: {total_est} {'✅' if passed else '❌ 不足15页，需要补充章节内容、增加步骤描述'}"
+            ))
+        except Exception:
+            self.results.append(CheckResult(
+                "R-MA-04", False, "error",
+                "操作手册页数 ≥ 15页",
+                "无法读取DOCX内容以估算页数"
             ))
         except Exception:
             self.results.append(CheckResult(
@@ -898,6 +897,63 @@ class CopyrightValidator:
         except Exception as e:
             self.results.append(CheckResult("R-MA-11", True, "info", "文档结构检查", f"无法检查: {e}"))
 
+    def _rule_manual_step_count(self):
+        """R-MA-12: 每个功能模块编号步骤 ≥ 5 步"""
+        if not self._manual_docx_path:
+            return
+        try:
+            text = self._read_docx_text(self._manual_docx_path)
+            import re
+            # 找编号步骤：行首 "数字."
+            steps = re.findall(r'^\d+\.\s+\S', text, re.MULTILINE)
+            step_count = len(steps)
+            # 找功能模块数：一级标题数
+            from docx import Document
+            doc = Document(str(self._manual_docx_path))
+            h1_count = sum(1 for p in doc.paragraphs if p.style.name.startswith('Heading 1'))
+            # 排除封面和目录标题
+            h1_actual = max(0, h1_count - 2)
+            
+            if h1_actual > 0:
+                avg_steps = step_count / h1_actual
+                passed = avg_steps >= 3 and step_count >= h1_actual * 2
+                detail = f"总{step_count}个编号步骤 / {h1_actual}个功能模块 = 均{avg_steps:.1f}步 {'✅' if passed else '❌ 建议每功能≥5步'}"
+            else:
+                passed = step_count >= 5
+                detail = f"总{step_count}个编号步骤 {'✅' if passed else '❌ 建议至少5个步骤'}"
+            
+            self.results.append(CheckResult("R-MA-12", passed, "error", "功能模块编号步骤数量（建议每功能≥5步）", detail))
+        except Exception as e:
+            self.results.append(CheckResult("R-MA-12", True, "info", "步骤数量检查", f"无法检查: {e}"))
+
+    def _rule_manual_ui_controls(self):
+        """R-MA-13: 引用带引号的UI控件名"""
+        if not self._manual_docx_path:
+            return
+        try:
+            text = self._read_docx_text(self._manual_docx_path)
+            import re
+            # 找引号引用的UI控件："XXX"
+            controls = re.findall(r'"([^"]{2,30})"', text)
+            # 过滤掉不是UI控件名的通用引号内容
+            ui_keywords = ['按钮', '框', '区', '栏', '页', '菜单', '图标', '链接', '选项', '输入', '选择', '列表', '卡片', '提示', '窗口', '弹窗', '确认', '取消', '保存', '删除', '编辑']
+            ui_controls = [c for c in controls if any(kw in c for kw in ui_keywords)]
+            
+            control_count = len(ui_controls)
+            # 估算步骤数
+            steps = re.findall(r'^\d+\.\s+\S', text, re.MULTILINE)
+            step_count = max(len(steps), 1)
+            
+            ratio = control_count / step_count
+            passed = ratio >= 0.5 and control_count >= 3
+            detail = f"UI控件引用: {control_count}处, 均{ratio:.1f}处/步 {'✅' if passed else '❌ 建议每步至少引用1个UI控件名'}"
+            if ui_controls:
+                detail += f" | 示例: {', '.join(ui_controls[:5])}"
+            
+            self.results.append(CheckResult("R-MA-13", passed, "error", "引用带引号的UI控件名（建议每步≥1处）", detail))
+        except Exception as e:
+            self.results.append(CheckResult("R-MA-13", True, "info", "UI控件检查", f"无法检查: {e}"))
+
     def _rule_file_naming(self):
         """R-CO-03: 文件名规范"""
         workdir = Path(self.workdir)
@@ -1134,6 +1190,8 @@ class CopyrightValidator:
             self._rule_docx_has_page_fields()
             self._rule_docx_toc_aligned()
             self._rule_docx_structure()
+            self._rule_manual_step_count()
+            self._rule_manual_ui_controls()
 
         # Phase 3: Application
         self._rule_application_exists()
