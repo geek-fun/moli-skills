@@ -111,7 +111,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: 安装依赖
-        run: pip install python-docx
+        run: pip install python-docx fpdf2
       - name: 创建测试材料并运行验证
         run: |
           python3 << 'PYEOF'

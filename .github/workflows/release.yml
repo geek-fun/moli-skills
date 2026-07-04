@@ -15,13 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 读取版本号
-        id: version
-        run: |
-          V=$(cat VERSION | tr -d ' \n')
-          echo "version=v$V" >> $GITHUB_OUTPUT
-          echo "Current version: v$V"
-
       - name: 检查版本变化
         id: check
         run: |
@@ -39,26 +32,34 @@ jobs:
 
       - name: 生成 Changelog
         if: steps.check.outputs.changed == 'true'
-        uses: jaywcjlove/changelog-generator@main
-        id: changelog
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LAST_TAG="${{ steps.check.outputs.last_tag }}"
+          if [ -n "$LAST_TAG" ]; then
+            git log "$LAST_TAG..HEAD" --oneline --no-merges --pretty=format:"- %s" > /tmp/changelog.md
+          else
+            git log --oneline --no-merges --pretty=format:"- %s" > /tmp/changelog.md
+          fi
+          echo "Changelog 已生成 ($(wc -l < /tmp/changelog.md) 条)"
 
       - name: 创建 Release
         if: steps.check.outputs.changed == 'true'
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ steps.check.outputs.current }}"
+          NOTES="/tmp/release-notes.md"
+          echo "## 更新内容" > "$NOTES"
+          echo "" >> "$NOTES"
+          cat /tmp/changelog.md >> "$NOTES" 2>/dev/null || echo "- 初始版本" >> "$NOTES"
+          echo "" >> "$NOTES"
+          echo "---" >> "$NOTES"
+          echo "## 安装" >> "$NOTES"
+          echo "" >> "$NOTES"
+          echo '```bash' >> "$NOTES"
+          echo "curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/$VERSION/install.sh | bash" >> "$NOTES"
+          echo '```' >> "$NOTES"
+
           gh release create "$VERSION" \
             --title "moli-skills $VERSION" \
-            --notes "${{ steps.changelog.outputs.changelog }}
-
-          ## 安装
-
-          \`\`\`bash
-          curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/$VERSION/install.sh | bash
-          \`\`\`
-
-          更新内容见: ${{ steps.changelog.outputs.compareurl }}" \
+            --notes-file "$NOTES" \
             ./install.sh ./requirements.txt
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
