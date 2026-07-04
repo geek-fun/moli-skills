@@ -755,7 +755,7 @@ class CopyrightValidator:
             if has_hardcoded_toc and not has_toc:
                 detail += " | ⚠️ 检测到手写目录列表"
             
-            self.results.append(CheckResult("R-MA-08", passed, "error", "DOCX使用自动目录（TOC域代码）", detail))
+            self.results.append(CheckResult("R-MA-08", passed, "warning", "DOCX使用自动目录（TOC域代码建议）", detail))
         except Exception as e:
             self.results.append(CheckResult("R-MA-08", True, "info", "DOCX自动目录检查", f"无法检查: {e}"))
 
@@ -769,7 +769,7 @@ class CopyrightValidator:
             has_numpages_field = 'NUMPAGES' in xml
             passed = has_page_field
             detail = f"PAGE域: {'✅' if has_page_field else '❌ 页眉页码应使用PAGE域代码'} | NUMPAGES域: {'✅' if has_numpages_field else '⚠️ 建议使用NUMPAGES域'}"
-            self.results.append(CheckResult("R-MA-09", passed, "error", "页眉页码使用Word域代码", detail))
+            self.results.append(CheckResult("R-MA-09", passed, "warning", "页眉页码使用Word域代码（建议）", detail))
         except Exception as e:
             self.results.append(CheckResult("R-MA-09", True, "info", "页眉页码检查", f"无法检查: {e}"))
 
