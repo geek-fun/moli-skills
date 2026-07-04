@@ -1,5 +1,5 @@
 ---
-name: moli-cn-copyright-update
+name: moli-update
 description: 检查并升级 moli-skills 到最新版本。当用户提到"升级"、"更新"、"检查更新"、"update"时使用。
 license: Apache-2.0
 compatibility: opencode

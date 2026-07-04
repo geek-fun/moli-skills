@@ -33,4 +33,4 @@ export MOLI_SKILLS_DIR="$HOME/.moli-skills"
 
 ## 更新
 
-告知用户：`/moli-cn-copyright-update` 检查并升级到最新版本。Agent 也可在加载技能时自动检查版本。
+告知用户：`/moli-update` 检查并升级到最新版本。Agent 也可在加载技能时自动检查版本。

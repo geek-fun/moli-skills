@@ -77,11 +77,11 @@ if [ ! -L "$AG_VAL_DIR/SKILL.md" ]; then
 fi
 
 # OpenCode update command
-AG_UPD_DIR="$HOME/.agents/skills/moli-cn-copyright-update"
+AG_UPD_DIR="$HOME/.agents/skills/moli-update"
 if [ ! -L "$AG_UPD_DIR/SKILL.md" ]; then
     mkdir -p "$(dirname "$AG_UPD_DIR")"
-    ln -sfn "$INSTALL_DIR/opencode/update" "$AG_UPD_DIR"
-    echo -e "  ${GREEN}✅${NC} OpenCode: /moli-cn-copyright-update"
+    ln -sfn "$INSTALL_DIR/opencode/moli-update" "$AG_UPD_DIR"
+    echo -e "  ${GREEN}✅${NC} OpenCode: /moli-update"
 fi
 
 # OpenCode (alt): symlink to ~/.config/opencode/skills/moli-cn-copyright/
