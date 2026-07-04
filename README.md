@@ -80,6 +80,28 @@ docs/moli/
 └── copyright-latest -> copyright-v2
 ```
 
+## 常见问题
+
+### 安装后 `/moli-cn-copyright` 不可用？
+确保 install.sh 已执行。手动检查：`ls ~/.agents/skills/moli-cn-copyright/SKILL.md` 应存在。如不存在，重新运行 install.sh。
+
+### 生成 PDF 中文显示为方框/乱码？
+系统缺少中文字体。macOS 自带 Songti 字体，无需操作。Linux 需安装：`sudo apt install fonts-wqy-zenhei`。Windows 自带宋体。
+
+### Python 依赖安装失败？
+```bash
+pip install python-docx
+```
+如果权限不足，加 `--user` 或使用虚拟环境。
+
+### Agent 说找不到 `MOLI_SKILLS_DIR`？
+运行 `source ~/.zshrc` 或重启终端。或手动设置：`export MOLI_SKILLS_DIR="$HOME/.moli-skills"`。
+
+### 验证报告全是 ❌？
+检查材料目录是否正确：`--workdir` 应指向包含 PDF 和 DOCX 的 `正式资料/` 目录。
+
+## 架构
+
 ## 架构
 
 ```

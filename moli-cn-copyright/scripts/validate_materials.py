@@ -1012,6 +1012,8 @@ class CopyrightValidator:
         return "\n".join(lines)
 
 
+VERSION = "1.0.0"
+
 # ══════════════════════════════════════════════════════════════
 # CLI入口
 # ══════════════════════════════════════════════════════════════
@@ -1019,9 +1021,10 @@ class CopyrightValidator:
 def main():
     import argparse
     parser = argparse.ArgumentParser(
-        description="墨吏 · 软著材料合规性验证器",
+        description=f"墨吏 · 软著材料合规性验证器 v{VERSION}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=f"""
+版本: {VERSION}
 示例:
   # 验证当前目录下的软著材料
   python3 validate_materials.py --software-name "山野集-菌迹软件" --version V1.0
