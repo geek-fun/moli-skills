@@ -309,10 +309,20 @@ docs/moli/
 
 ## Step 6: Validate（Agent 执行）
 
-用户告知 review 完成后，Agent 自动运行验证：
+用户告知 review 完成后，Agent 自动运行验证。如果发现 R-MA-14 标点符号混用问题，自动运行 `--fix-punctuation` 修复后重新验证。
 
 ```bash
-# 这条命令由 Agent 执行，用户不需要知道
+# 先验证
+python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
+  --workdir docs/moli/copyright-v1/正式资料 \
+  --software-name "xxx软件" \
+  --version V1.0
+
+# 如果有标点问题，自动修复
+python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
+  --workdir docs/moli/copyright-v1/正式资料 --fix-punctuation
+
+# 重新验证
 python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
   --workdir docs/moli/copyright-v1/正式资料 \
   --software-name "xxx软件" \
