@@ -2,7 +2,18 @@
 
 ## 工作流
 
-四步完成：**setup check → source scan → ask unclear → generate**
+```
+ setup check → source scan → ask unclear → generate
+                                              ↓
+                                        用户 review
+                                         （补充截图/修改内容）
+                                              ↓
+                                        validate  ← 用户触发
+                                              ↓
+                                            fix
+                                              ↓
+                                          完成 ✅
+```
 
 ---
 
@@ -123,6 +134,59 @@ docs/moli/
 ```
 
 每次生成自增版本号。操作手册内的「文档修改记录」表格自动更新。
+
+---
+
+## Step 5: User Review
+
+生成完成后，告知用户：
+
+```
+📋 材料已生成到 docs/moli/copyright-v1/
+   请 review 并补充：
+   1. 操作手册截图 → 放入 截图/ 目录
+   2. 检查内容是否准确
+   3. 修改完成后运行 validate 检查合规
+```
+
+## Step 6: Validate
+
+用户修改完成后，告知用户如何运行验证：
+
+```bash
+python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
+  --workdir docs/moli/copyright-v1/正式资料 \
+  --software-name "xxx软件" \
+  --version V1.0
+```
+
+输出示例：
+
+```
+  ✅ R-SC-01 源代码PDF文件存在
+  ✅ R-SC-02 源代码PDF页数 = 60
+  ❌ R-SC-03 页眉包含软件名称和版本号
+        软件名称: ❌
+        版本号: ✅
+        页眉预览: xxx软件 V1.0 源代码
+        问题: 页眉包含"源代码"字样，应去掉
+  
+  总计: 19 | ✅ 通过: 17 | ❌ 错误: 2
+```
+
+## Step 7: Fix
+
+根据 validate 报告中的 ❌ 错误，逐条修复：
+
+```bash
+# 修复后重新验证
+python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
+  --workdir docs/moli/copyright-v2/正式资料 \
+  --software-name "xxx软件" \
+  --version V1.0
+```
+
+**直到所有 ❌ 修复为 ✅，材料方可提交。**
 
 ---
 
