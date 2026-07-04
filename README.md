@@ -36,22 +36,36 @@ curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.
 
 ## 使用：软著申请
 
+### 第一步：生成
+
 告诉你的 agent：
 
 ```
 帮我用 moli-cn-copyright 生成软著申请材料
 ```
 
-AI 自动完成：
+AI 自动完成环境检查、源码扫描、确认信息、生成材料。
+
+### 第二步：验证
+
+你补充截图、修改内容后，告诉 agent：
+
+```
+帮我验证软著材料
+```
+
+AI 自动运行 33 条规则检查，发现问题自动修复，直到全部通过。
+
+### 完整流程
 
 ```
 ① setup check   → 检查环境
 ② source scan   → 读源码、理解功能
 ③ ask unclear   → 最多问 3 个问题
-④ generate      → 输出可上传的材料
-⑤ review        → 你补充截图，告知 AI"帮我验证"
-⑥ validate      → AI 自动跑 33 条规则检查
-⑦ fix           → AI 修复问题，直到全部通过
+④ generate      → 输出 docs/moli/copyright-v1/
+⑤ review        → 你补充截图、修改内容
+⑥ validate      → 你告诉 AI"帮我验证"，AI 自动检查
+⑦ fix           → AI 修复问题，直到全部通过 ✅
 ```
 
 ### 输出
