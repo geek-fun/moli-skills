@@ -2,40 +2,41 @@
 
 墨吏（moli）是一款面向中文场景的 AI 文书技能集。**任何 agent 都能用。**
 
-## Agent 兼容
-
-| Agent | 使用方式 | 状态 |
-|---|---|---|
-| OpenCode | `opencode/SKILL.md` | ✅ |
-| Claude Code | `claude/plugin.json` | 🔜 |
-| Cursor / Windsurf | `.cursor/rules/` | 🔜 |
-| Codex / Cline / Aider / 任何 LLM | 读取 `instructions/` 或 `README.md` | ✅ 通用 |
-
 ## 技能清单
 
 | 技能 | 说明 | 状态 |
 |---|---|---|
-| `moli-cn-copyright` | AI 自动生成软著全套材料 | ✅ |
+| `moli-cn-copyright` | AI 自动分析项目代码，生成全套软著申请材料 | ✅ |
 | `moli-cn-patent` | 专利申请材料生成 | 🔜 |
 | `moli-write-polish` | 文章润色 | 🔜 |
 
-## 安装
+## 安装与 Agent 兼容
 
-告诉你的 agent：
+| 你的 Agent | 兼容 | 安装方式 |
+|---|---|---|
+| **OpenCode** | ✅ | `帮我安装 https://github.com/geek-fun/moli-skills` |
+| **Claude Code** | 🔜 | 规划中 |
+| **Cursor / Windsurf** | 🔜 | 规划中 |
+| **Codex / Cline / Aider** | ✅ 通用 | 读取本说明，按步骤执行 |
+| **任何 LLM** | ✅ 通用 | 读取 `instructions/moli-cn-copyright.md` 并按指引操作 |
 
+以上 Agent 均可通过以下命令安装依赖：
+
+```bash
+git clone --depth=1 https://github.com/geek-fun/moli-skills.git ~/.moli-skills
+pip install python-docx
+export MOLI_SKILLS_DIR="$HOME/.moli-skills"
 ```
-帮我安装 https://github.com/geek-fun/moli-skills
-```
 
-Agent 会读取本说明，自动完成：克隆 → 装依赖 → 配环境。
-
-或手动：
+或一键脚本：
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
 ```
 
 ## 使用：软著申请
+
+告诉你的 agent：
 
 ```
 帮我用 moli-cn-copyright 生成软著申请材料
@@ -78,7 +79,6 @@ moli-skills/
 │   ├── scripts/            ← Python 辅助脚本
 │   ├── references/         ← 规范文档
 │   └── vendor/             ← DOCX 工具链
-├── AGENTS.md               ← 兼容性说明
 ├── ARCHITECTURE.md         ← 命令体系设计
 ├── cli.py                  ← CLI 入口
 └── install.sh              ← 安装脚本
