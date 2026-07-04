@@ -719,7 +719,7 @@ class CopyrightValidator:
             return
         text = self._extract_pdf_text(self._source_pdf_path, 1, 3)
         # Common company-related patterns that shouldn't appear (except the copyright holder)
-        forbidden = re.findall(r'(有限公司|科技(?!.*(?:有限公司|科技))|股份|集团|工作室|社\)', text[:1000])
+        forbidden = re.findall(r'有限公司|股份有限公司|有限责任公司|科技公司|集团|工作室', text[:1000])
         # Filter out the copyright holder itself
         actual_forbidden = [f for f in forbidden if not any(owner in text[:200] for owner in ['沃泰森', 'WENTSEN'])]
         passed = len(actual_forbidden) == 0
