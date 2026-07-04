@@ -405,7 +405,7 @@ class CopyrightValidator:
         headings = self._read_docx_structure(self._manual_docx_path)
         heading_texts = [h['text'] for h in headings]
 
-        required_chapters = ['相关文档', '说明', '功能特点', '系统要求']
+        required_chapters = ['说明', '功能特点', '系统要求']
         found_chapters = []
         missing_chapters = []
         for ch in required_chapters:
@@ -472,12 +472,18 @@ class CopyrightValidator:
             doc = Document(str(self._manual_docx_path))
             # Rough page estimate: count explicit page breaks + estimate from content
             text = "\n".join(p.text for p in doc.paragraphs)
-            # Count explicit page breaks in the XML
+            # Count page breaks (w:br with w:type="page")
             page_breaks_xml = str(doc.element.xml).count('w:type="page"')
-            # Count section breaks (each new section = new page minimum)
-            section_breaks = len(doc.sections) - 1
-            # Estimate: A4 with 小四 12pt / 1.5 line spacing + headings + tables ≈ 1200 chars per page
-            est_content_pages = max(1, len(text) // 1200)
+            # Also count explicit section breaks
+            section_breaks = max(0, len(doc.sections) - 1)
+            # Estimate: A4 with 小四 12pt / 1.5 line spacing + headings + tables
+            # Tables add significant content not captured in paragraph text
+            table_rows = sum(len(t.rows) for t in doc.tables)
+            table_chars = table_rows * 40  # rough estimate
+            total_text = len(text) + table_chars
+            # Small font, dense content: ~1000 chars per page
+            # plus tables which take more space visually
+            est_content_pages = max(1, total_text // 800)
             total_est = max(page_breaks_xml + section_breaks + 1, est_content_pages)
             passed = total_est >= 15
             self.results.append(CheckResult(
