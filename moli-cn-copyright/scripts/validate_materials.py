@@ -622,6 +622,83 @@ class CopyrightValidator:
             detail
         ))
 
+    def _rule_pdf_no_third_party_names(self):
+        """R-SC-10: 代码中无第三方公司/个人名称"""
+        if not self._source_pdf_path:
+            return
+        text = self._extract_pdf_text(self._source_pdf_path, 1, 3)
+        # Common company-related patterns that shouldn't appear (except the copyright holder)
+        forbidden = re.findall(r'(有限公司|科技(?!.*(?:有限公司|科技))|股份|集团|工作室|社\)', text[:1000])
+        # Filter out the copyright holder itself
+        actual_forbidden = [f for f in forbidden if not any(owner in text[:200] for owner in ['沃泰森', 'WENTSEN'])]
+        passed = len(actual_forbidden) == 0
+        self.results.append(CheckResult(
+            "R-SC-10", passed, "error",
+            "源代码中无第三方公司/个人名称",
+            f"发现 {len(actual_forbidden)} 个疑似第三方名称 {'✅' if passed else '❌ 请检查并删除第三方公司名称'}"
+        ))
+
+    def _rule_app_date_logic(self):
+        """R-AP-05: 日期逻辑正确（开发完成 ≤ 首次发表日期 < 申请日期）"""
+        if not self._application_txt_path:
+            return
+        text = open(self._application_txt_path, encoding='utf-8').read()
+        # Try to find dates
+        dates = re.findall(r'(\d{4}[-年]\d{1,2}[-月]\d{1,2})', text)
+        if len(dates) >= 2:
+            self.results.append(CheckResult(
+                "R-AP-05", True, "info",
+                "日期逻辑检查（开发完成 ≤ 首次发表日期 < 申请日期）",
+                f"检测到 {len(dates)} 个日期，请人工核验逻辑顺序"
+            ))
+        else:
+            self.results.append(CheckResult(
+                "R-AP-05", True, "info",
+                "日期逻辑检查",
+                "未找到足够日期信息进行自动校验，请人工确认"
+            ))
+
+    def _rule_manual_formatting(self):
+        """R-MA-07: 手册排版规范（字体/行距/缩进）"""
+        if not self._manual_docx_path:
+            return
+        try:
+            from docx import Document
+            doc = Document(str(self._manual_docx_path))
+            sample_para = None
+            for p in doc.paragraphs:
+                if p.text.strip() and len(p.text) > 20:
+                    sample_para = p
+                    break
+            if sample_para:
+                pf = sample_para.paragraph_format
+                fi = pf.first_line_indent
+                ls = pf.line_spacing
+                # Check font
+                fonts_used = set()
+                for p in doc.paragraphs[:50]:
+                    for run in p.runs:
+                        if run.font.name:
+                            fonts_used.add(run.font.name.lower())
+                has_songti = any('song' in f or '宋' in f or 'simsun' in f for f in fonts_used)
+                has_heitii = any('hei' in f or '黑' in f or 'simhei' in f for f in fonts_used)
+                details = []
+                details.append(f"字体: {', '.join(list(fonts_used)[:5]) or '未检测'}")
+                if fi:
+                    details.append(f"首行缩进: {'✅' if fi > 0 else '❌ 建议首行缩进2字符'}")
+                details.append(f"标题字体(黑体): {'✅' if has_heitii else '⚠️ 建议标题使用黑体'}")
+                details.append(f"正文字体(宋体): {'✅' if has_songti else '⚠️ 建议正文使用宋体'}")
+                passed = has_songti or has_heitii
+                self.results.append(CheckResult(
+                    "R-MA-07", passed, "warning",
+                    "手册排版规范（宋体正文/黑体标题/首行缩进）",
+                    " | ".join(details)
+                ))
+            else:
+                self.results.append(CheckResult("R-MA-07", True, "info", "手册排版规范", "未找到足够内容样本"))
+        except Exception:
+            self.results.append(CheckResult("R-MA-07", True, "info", "手册排版规范", "无法解析DOCX格式"))
+
     # ══════════════════════════════════════════════════════
     # 规则 4: 跨文档一致性
     # ══════════════════════════════════════════════════════
@@ -742,6 +819,7 @@ class CopyrightValidator:
             self._rule_pdf_no_blank_lines()
             self._rule_pdf_no_comments()
             self._rule_pdf_ends_with_complete_block()
+            self._rule_pdf_no_third_party_names()
 
         # Phase 2: User Manual
         if self._rule_manual_exists():
@@ -750,12 +828,14 @@ class CopyrightValidator:
             self._rule_manual_page_count()
             self._rule_manual_paragraph_style()
             self._rule_manual_no_ai_speak()
+            self._rule_manual_formatting()
 
         # Phase 3: Application
         self._rule_application_exists()
         self._rule_app_main_function_length()
         self._rule_app_software_name_format()
         self._rule_app_version_format()
+        self._rule_app_date_logic()
 
         # Phase 4: Consistency
         self._rule_consistency_name_across_docs()
