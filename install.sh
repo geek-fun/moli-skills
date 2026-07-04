@@ -2,7 +2,6 @@
 set -euo pipefail
 
 REPO="geek-fun/moli-skills"
-BRANCH="master"
 INSTALL_DIR="${MOLI_SKILLS_DIR:-$HOME/.moli-skills}"
 
 GREEN='\033[0;32m'
@@ -11,6 +10,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${BLUE}━━━ 墨吏 moli-skills 安装 ━━━${NC}"
+echo -e "  ${BLUE}ℹ${NC} 自动下载最新 Release 版本"
 
 # ── 1. 检测 Python ──
 PYTHON=""
@@ -32,13 +32,21 @@ if [ -z "$PYTHON" ]; then
 fi
 echo -e "  ${GREEN}✅${NC} Python: $($PYTHON --version)"
 
-# ── 2. 克隆 / 更新 ──
-if [ -d "$INSTALL_DIR/.git" ]; then
-    echo -e "  ${BLUE}ℹ${NC} 更新: $INSTALL_DIR"
-    git -C "$INSTALL_DIR" pull --ff-only origin "$BRANCH" 2>/dev/null || true
+# ── 2. 下载最新 Release ──
+rm -rf "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+
+echo -e "  ${BLUE}ℹ${NC} 获取最新 Release..."
+VERSION=$(curl -sL "https://api.github.com/repos/$REPO/releases/latest" \
+    | grep '"tag_name"' | head -1 | sed 's/.*"tag_name": "\(.*\)",/\1/')
+
+if [ -z "$VERSION" ]; then
+    echo -e "  ${YELLOW}⚠ 获取 Release 失败，回退到 master${NC}"
+    git clone --depth=1 --branch master "https://github.com/$REPO.git" "$INSTALL_DIR"
 else
-    echo -e "  ${BLUE}ℹ${NC} 克隆到: $INSTALL_DIR"
-    git clone --depth=1 --branch "$BRANCH" "https://github.com/$REPO.git" "$INSTALL_DIR"
+    echo -e "  ${GREEN}✅${NC} 下载: $VERSION"
+    TARBALL="https://github.com/$REPO/archive/refs/tags/$VERSION.tar.gz"
+    curl -sL "$TARBALL" | tar -xz -C "$INSTALL_DIR" --strip-components=1
 fi
 
 # ── 3. 安装依赖 ──
@@ -99,7 +107,7 @@ echo ""
 echo -e "${GREEN}━━━ 安装完成 ━━━${NC}"
 echo ""
 echo "使用方法："
-echo "  OpenCode:  告诉 agent "帮我用 moli-cn-copyright 生成软著""
+echo "  OpenCode:  /moli-cn-copyright"
 echo "  Claude:    claude --plugin ~/.claude/plugins/moli-skills"
 echo "  Cursor:    复制 cursor/rules/ 到项目 .cursor/rules/"
 echo ""
