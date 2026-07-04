@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+*.egg
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# IDE
+.idea/
+.vscode/
+*.sublime-*
+
+# Project specific
+**/node_modules/
+**/.next/
+
+# Keep vendor but exclude build artifacts
+**/vendor/**/bin/
+**/vendor/**/obj/
