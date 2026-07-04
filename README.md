@@ -1,58 +1,85 @@
 # 墨吏 Skills
 
-墨吏（moli）是一款面向中文场景的 AI 文书技能集，覆盖软件著作权申请、专利文档生成、文章润色、社交媒体文案等写作任务。
-
-## 核心理念
-
-> 与文书打交道的事，交给墨吏。
-
-墨吏 skills 的目标是让重复性的文书工作变得可自动化、可追溯、可审查。每个技能都遵循"收集 → 草稿 → 确认 → 输出"的工作流，确保最终产出经得起审查。
+墨吏（moli）是一款面向中文场景的 AI 文书技能集。一条命令，AI 自主完成复杂文书工作。
 
 ## 技能清单
 
 | 技能 | 命令 | 说明 | 状态 |
 |---|---|---|---|
-| 软著申请 | `moli-cn-copyright` | 生成中国软件著作权全套申请材料 | ✅ |
+| 软著申请 | `moli-cn-copyright` | AI 自动分析项目代码，生成全套软著申请材料 | ✅ |
 | 专利申请 | `moli-cn-patent` | 生成中国专利申请材料 | 🔜 |
 | 文章润色 | `moli-write-polish` | 文章润色与修改 | 🔜 |
 | 小红书文案 | `moli-write-xiaohongshu` | 小红书内容创作 | 🔜 |
-| 文章写作 | `moli-write-article` | 结构化文章写作 | 🔜 |
 
-## 快速开始
-
-### 在 OpenCode 中调用
+## 快速开始：软著申请
 
 ```typescript
-// 加载技能
-const copyrightSkill = await skill({ name: 'moli-cn-copyright' })
-
-// 或在任务中加载
+// 在 OpenCode 中
 task({
-  category: "unspecified-high",
   load_skills: ["moli-cn-copyright"],
-  prompt: "为我的项目生成软著申请材料"
+  prompt: "为当前项目生成软著申请材料"
 })
+
+// 或直接说
+"用 moli-cn-copyright 生成软著"
 ```
 
-### 目录结构
+### 一条命令，四步完成
+
+```
+① setup check   → 环境检查（缺啥问用户）
+② source scan   → AI 自动读源码、理解功能
+③ ask unclear   → 最多问 3 个问题
+④ generate      → 输出可直接上传的材料
+```
+
+### 输出（`docs/moli/copyright-v1/`）
+
+```
+docs/moli/
+├── copyright-v1/
+│   ├── 正式资料/
+│   │   ├── xxx_V1.0_源代码.pdf      ← 直接上传版权中心
+│   │   └── xxx_V1.0_操作手册.docx   ← 截图后转PDF上传
+│   └── 验证报告.md
+├── copyright-v2/                    ← 修订版
+├── 修订历史.md
+└── copyright-latest -> copyright-v2
+```
+
+### 验证
+
+生成后自动执行 33 条规则合规检查：
+
+```bash
+python3 moli-cn-copyright/scripts/validate_materials.py \
+  --software-name "xxx软件" --version V1.0
+```
+
+## 架构
 
 ```
 moli-skills/
-├── README.md                 # 本文件
-├── ARCHITECTURE.md           # 架构与命令体系文档
-├── moli-cn-copyright/        # 软著申请（已实现）
-├── moli-cn-patent/           # 专利申请（预留）
-├── moli-write-polish/        # 文章润色（预留）
-└── templates/                # 共享模板
+├── README.md              # 本文件
+├── ARCHITECTURE.md        # 命令体系设计
+├── moli-cn-copyright/     # 软著申请（已实现）
+│   ├── SKILL.md           # AI 工作流指引
+│   ├── references/        # 6 份规范文档
+│   ├── scripts/           # 12 个辅助脚本
+│   │   └── validate_materials.py  # 33条规则验证器
+│   └── vendor/            # DOCX 工具链
+├── moli-cn-patent/        # 🔜
+└── moli-write-polish/     # 🔜
 ```
 
-## 开发规范
+## 设计原则
 
-1. 每个技能是一个独立目录，包含完整的 `SKILL.md`
-2. `SKILL.md` 必须包含：name、description、详细工作流、验证检查项
-3. 脚本和资源放在技能目录内部，不跨目录引用
-4. 共享资源放在 `templates/` 目录下
+- **AI 驱动，脚本辅助**：AI 直接阅读源码，脚本只做格式化和验证
+- **最少干预**：只问 AI 无法确定的决定
+- **版本可追溯**：每次生成保留独立版本，`修订历史.md` 跟踪变更
+- **即生即验**：生成完成后自动合规检查
 
 ## 许可证
 
-MIT License. 各技能目录内含原始作者许可证信息。
+Apache 2.0 © 2026 WENTSEN (Kunming) Technology Co., Ltd.
+各子模块保留原作者许可证。
