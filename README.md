@@ -1,89 +1,63 @@
 # 墨吏 Skills
 
-墨吏（moli）是一款面向中文场景的 AI 文书技能集。一条命令，AI 自主完成复杂文书工作。
+墨吏（moli）是一款面向中文场景的 AI 文书技能集。**任何 agent 都能用。**
+
+## Agent 兼容
+
+| Agent | 使用方式 | 状态 |
+|---|---|---|
+| OpenCode | `opencode/SKILL.md` | ✅ |
+| Claude Code | `claude/plugin.json` | 🔜 |
+| Cursor / Windsurf | `.cursor/rules/` | 🔜 |
+| Codex / Cline / Aider / 任何 LLM | 读取 `instructions/` 或 `README.md` | ✅ 通用 |
 
 ## 技能清单
 
-| 技能 | 命令 | 说明 | 状态 |
-|---|---|---|---|
-| 软著申请 | `moli-cn-copyright` | AI 自动分析项目代码，生成全套软著申请材料 | ✅ |
-| 专利申请 | `moli-cn-patent` | 生成中国专利申请材料 | 🔜 |
-| 文章润色 | `moli-write-polish` | 文章润色与修改 | 🔜 |
-| 小红书文案 | `moli-write-xiaohongshu` | 小红书内容创作 | 🔜 |
+| 技能 | 说明 | 状态 |
+|---|---|---|
+| `moli-cn-copyright` | AI 自动生成软著全套材料 | ✅ |
+| `moli-cn-patent` | 专利申请材料生成 | 🔜 |
+| `moli-write-polish` | 文章润色 | 🔜 |
 
 ## 安装
 
-### 告诉你的 Agent
+告诉你的 agent：
 
 ```
 帮我安装 https://github.com/geek-fun/moli-skills
 ```
 
-Agent 会自动：
-1. 读取本页安装说明
-2. 克隆仓库到 `~/.moli-skills`
-3. 安装 `python-docx`
-4. 配置 `MOLI_SKILLS_DIR` 环境变量
-5. 验证安装成功
+Agent 会读取本说明，自动完成：克隆 → 装依赖 → 配环境。
 
-### 手动安装
+或手动：
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
 ```
 
-### 安装脚本执行的内容（供 Agent 参考）
-
-```bash
-# 克隆
-git clone --depth=1 https://github.com/geek-fun/moli-skills.git ~/.moli-skills
-
-# 依赖
-pip install python-docx
-
-# 环境变量
-echo 'export MOLI_SKILLS_DIR="$HOME/.moli-skills"' >> ~/.zshrc
-
-# 验证
-python3 ~/.moli-skills/moli-cn-copyright/scripts/validate_materials.py --help
-```
-
 ## 使用：软著申请
 
-### 在 OpenCode 中使用
-
-```typescript
-task({
-  load_skills: ["moli-cn-copyright"],
-  prompt: "为当前项目生成软著申请材料"
-})
-// 或直接说： "用 moli-cn-copyright 生成软著"
+```
+帮我用 moli-cn-copyright 生成软著申请材料
 ```
 
-### 独立运行（验证）
-
-```bash
-python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
-  --software-name "xxx软件" --version V1.0
-```
-
-### 一条命令，四步完成
+AI 自动完成四步：
 
 ```
-① setup check   → 环境检查（缺啥问用户）
-② source scan   → AI 自动读源码、理解功能
+① setup check   → 检查环境
+② source scan   → 读源码、理解功能
 ③ ask unclear   → 最多问 3 个问题
-④ generate      → 输出可直接上传的材料
+④ generate      → 输出可上传的材料
 ```
 
-### 输出（`docs/moli/copyright-v1/`）
+### 输出
 
 ```
 docs/moli/
 ├── copyright-v1/
 │   ├── 正式资料/
 │   │   ├── xxx_V1.0_源代码.pdf      ← 直接上传版权中心
-│   │   └── xxx_V1.0_操作手册.docx   ← 截图后转PDF上传
+│   │   └── xxx_V1.0_操作手册.docx   ← 截图后转PDF
 │   └── 验证报告.md
 ├── copyright-v2/                    ← 修订版
 ├── 修订历史.md
@@ -94,26 +68,22 @@ docs/moli/
 
 ```
 moli-skills/
-├── README.md              # 本文件
-├── ARCHITECTURE.md        # 命令体系设计
-├── moli-cn-copyright/     # 软著申请（已实现）
-│   ├── SKILL.md           # AI 工作流指引
-│   ├── references/        # 6 份规范文档
-│   ├── scripts/           # 12 个辅助脚本
-│   │   └── validate_materials.py  # 33条规则验证器
-│   └── vendor/            # DOCX 工具链
-├── moli-cn-patent/        # 🔜
-└── moli-write-polish/     # 🔜
+├── instructions/           ← 共享工作流（所有 agent 可读）
+│   └── moli-cn-copyright.md
+├── opencode/               ← OpenCode 适配层
+│   └── SKILL.md
+├── claude/                 ← Claude Code 适配层 (🔜)
+├── cursor/                 ← Cursor 适配层 (🔜)
+├── moli-cn-copyright/      ← 核心脚本与规范
+│   ├── scripts/            ← Python 辅助脚本
+│   ├── references/         ← 规范文档
+│   └── vendor/             ← DOCX 工具链
+├── AGENTS.md               ← 兼容性说明
+├── ARCHITECTURE.md         ← 命令体系设计
+├── cli.py                  ← CLI 入口
+└── install.sh              ← 安装脚本
 ```
-
-## 设计原则
-
-- **AI 驱动，脚本辅助**：AI 直接阅读源码，脚本只做格式化和验证
-- **最少干预**：只问 AI 无法确定的决定
-- **版本可追溯**：每次生成保留独立版本，`修订历史.md` 跟踪变更
-- **即生即验**：生成完成后自动合规检查
 
 ## 许可证
 
 Apache 2.0 © 2026 WENTSEN (Kunming) Technology Co., Ltd.
-各子模块保留原作者许可证。
