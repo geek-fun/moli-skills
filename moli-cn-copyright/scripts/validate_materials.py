@@ -963,8 +963,6 @@ class CopyrightValidator:
         try:
             text = self._read_docx_text(self._manual_docx_path)
             import re
-            # 检查中文正文中混用的半角标点
-            # 场景：中文字符附近出现半角逗号、句号、冒号、分号、问号、感叹号
             mixed = []
             patterns = [
                 (r'[\u4e00-\u9fff][,]', '半角逗号在中文字后'),
@@ -973,6 +971,7 @@ class CopyrightValidator:
                 (r'[\u4e00-\u9fff][.]', '半角句号在中文字后'),
                 (r'[\u4e00-\u9fff][!]', '半角感叹号在中文字后'),
                 (r'[\u4e00-\u9fff][?]', '半角问号在中文字后'),
+                (r'[\u4e00-\u9fff]"[\u4e00-\u9fff]', '半角引号在中文之间'),  # 中"中 — 左右相等用半角
             ]
             for pat, desc in patterns:
                 matches = re.findall(pat, text)
@@ -981,7 +980,7 @@ class CopyrightValidator:
             
             passed = len(mixed) == 0
             detail = "✅ 中文标点统一使用全角符号" if passed else "❌ " + "; ".join(mixed[:5])
-            self.results.append(CheckResult("R-MA-14", passed, "warning", "中文正文标点统一（全角，参考GB/T 15834）", detail))
+            self.results.append(CheckResult("R-MA-14", passed, "warning", "中文正文标点统一（全角，可运行 --fix-punctuation 修复）", detail))
         except Exception as e:
             self.results.append(CheckResult("R-MA-14", True, "info", "标点检查", f"无法检查: {e}"))
 
