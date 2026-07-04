@@ -315,7 +315,7 @@ class CopyrightValidator:
         ))
 
     def _rule_pdf_no_comments(self):
-        """R-SC-05: 无注释"""
+        """R-SC-05: 无注释行（排除文件路径标记）"""
         if not self._source_pdf_path:
             return
         text = self._extract_pdf_text(self._source_pdf_path, 1, 3)
@@ -323,12 +323,15 @@ class CopyrightValidator:
         comment_count = 0
         for line in body_lines:
             stripped = line.strip()
+            # 排除文件路径标记 // ========== ... ==========
+            if '==========' in stripped:
+                continue
             if stripped.startswith('//') or stripped.startswith('#') or stripped.startswith('/*'):
                 comment_count += 1
         passed = comment_count == 0
         self.results.append(CheckResult(
             "R-SC-05", passed, "error",
-            "源代码无注释行（// # /* */）",
+            "源代码无注释行（排除文件路径标记）",
             f"发现 {comment_count} 行注释 {'✅' if passed else '❌ 请删除所有注释行'}"
         ))
 
