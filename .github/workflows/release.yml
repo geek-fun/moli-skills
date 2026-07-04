@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 提取版本号
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: 运行 CI 检查
+        run: |
+          pip install python-docx
+          for f in moli-cn-copyright/scripts/*.py; do
+            python3 -m py_compile "$f"
+          done
+          python3 cli.py --version
+
+      - name: 生成 Release Notes
+        run: |
+          cat > /tmp/release-notes.md << 'EOF'
+          # 墨吏 moli-skills v${{ steps.version.outputs.VERSION }}
+
+          ## 安装
+
+          ```bash
+          curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
+          ```
+
+          ## 主要功能
+
+          - `/moli-cn-copyright` — AI 自动生成软著全套材料
+          - `/moli-cn-copyright-validate` — 验证已生成的材料
+          - 33 条合规规则 + 100+ AI 模式检测
+          - 支持 OpenCode / Claude Code / Cursor
+
+          详见 README。
+          EOF
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: moli-skills v${{ steps.version.outputs.VERSION }}
+          body_path: /tmp/release-notes.md
+          files: |
+            install.sh
+            requirements.txt
+          generate_release_notes: false

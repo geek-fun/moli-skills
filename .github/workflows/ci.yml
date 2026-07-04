@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+      - '.gitignore'
+  pull_request:
+    branches: [master]
+
+jobs:
+  # ─── Job 1: Python 语法检查 ───
+  python-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 安装依赖
+        run: pip install python-docx
+      - name: Python 语法检查
+        run: |
+          echo "=== 检查所有脚本 ==="
+          for f in moli-cn-copyright/scripts/*.py; do
+            python3 -m py_compile "$f" && echo "  ✅ $f" || exit 1
+          done
+      - name: CLI 可用性检查
+        run: |
+          python3 cli.py --help
+          python3 moli-cn-copyright/scripts/validate_materials.py --help
+          python3 cli.py --version
+
+  # ─── Job 2: SKILL.md 格式校验 ───
+  skill-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 校验 SKILL.md 文件
+        run: |
+          python3 << 'PYEOF'
+          import os, re, yaml, sys
+
+          errors = []
+
+          skill_files = [
+              'opencode/SKILL.md',
+              'opencode/validate/SKILL.md',
+              'claude/skills/copyright/SKILL.md',
+              'claude/skills/validate/SKILL.md',
+          ]
+
+          for path in skill_files:
+              if not os.path.exists(path):
+                  errors.append(f"❌ 缺失: {path}")
+                  continue
+
+              with open(path) as f:
+                  content = f.read()
+
+              # 解析 YAML frontmatter
+              if not content.startswith('---'):
+                  errors.append(f"❌ {path}: 缺少 YAML frontmatter")
+                  continue
+
+              parts = content.split('---', 2)
+              if len(parts) < 3:
+                  errors.append(f"❌ {path}: frontmatter 格式错误")
+                  continue
+
+              try:
+                  meta = yaml.safe_load(parts[1])
+              except yaml.YAMLError as e:
+                  errors.append(f"❌ {path}: YAML 解析失败: {e}")
+                  continue
+
+              # 校验必填字段
+              for field in ['name', 'description']:
+                  if field not in meta:
+                      errors.append(f"❌ {path}: 缺少 '{field}'")
+
+              # name 格式: ^[a-z0-9]+(-[a-z0-9]+)*$
+              if 'name' in meta:
+                  n = meta['name']
+                  if not re.match(r'^[a-z0-9]+(-[a-z0-9]+)*$', n):
+                      errors.append(f"❌ {path}: name '{n}' 格式无效")
+                  if len(n) > 64:
+                      errors.append(f"❌ {path}: name 超过 64 字符")
+
+              # description 长度: 1-1024
+              if 'description' in meta:
+                  d = meta['description']
+                  if not (1 <= len(d) <= 1024):
+                      errors.append(f"❌ {path}: description 长度 {len(d)} (须 1-1024)")
+
+          if errors:
+              print("\n".join(errors))
+              sys.exit(1)
+          else:
+              print("✅ 所有 SKILL.md 文件格式正确")
+          PYEOF
+
+  # ─── Job 3: 验证器功能测试 ───
+  validate-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 安装依赖
+        run: pip install python-docx
+      - name: 创建测试材料并运行验证
+        run: |
+          python3 << 'PYEOF'
+          # 生成一个最小测试 PDF 用于验证器测试
+          from fpdf import FPDF
+
+          pdf = FPDF()
+          pdf.add_page()
+          pdf.set_font('Helvetica', '', 10)
+          for i in range(50):
+              pdf.cell(0, 5, f'line {i}: const test = "hello world";', new_x="LMARGIN", new_y="NEXT")
+          pdf.output('/tmp/test-source.pdf')
+          print("✅ 测试 PDF 已生成")
+
+          # 运行验证器
+          import sys
+          sys.path.insert(0, 'moli-cn-copyright/scripts')
+          from validate_materials import CopyrightValidator
+
+          v = CopyrightValidator(workdir='/tmp', software_name='测试软件', version='V1.0')
+          v.run_all()
+          report = v.print_report()
+          print(report)
+
+          s = v.summary()
+          print(f"\n总计: {s['total']} | 通过: {s['passed']} | 错误: {s['errors']}")
+          PYEOF
+
+  # ─── Job 4: 安装脚本测试 ───
+  install-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 模拟安装过程
+        run: |
+          # 模拟 install.sh 的核心步骤
+          export MOLI_SKILLS_DIR="/tmp/test-moli"
+          git clone --depth=1 https://github.com/geek-fun/moli-skills.git "$MOLI_SKILLS_DIR"
+          pip install python-docx
+          python3 "$MOLI_SKILLS_DIR"/moli-cn-copyright/scripts/validate_materials.py --help
+          echo "✅ 安装测试通过"
