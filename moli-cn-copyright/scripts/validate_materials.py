@@ -985,6 +985,48 @@ class CopyrightValidator:
         except Exception as e:
             self.results.append(CheckResult("R-MA-14", True, "info", "标点检查", f"无法检查: {e}"))
 
+    def fix_punctuation(self) -> int:
+        """修复中文正文中的半角标点为全角，返回修复处数"""
+        self._manual_docx_path = self._find_manual_docx()
+        if not self._manual_docx_path:
+            print("❌ 未找到操作手册DOCX文件")
+            return 0
+        try:
+            import zipfile, shutil, re
+            from docx import Document
+            doc = Document(str(self._manual_docx_path))
+            fix_count = 0
+            
+            # 中文字后的半角标点 → 全角
+            punct_map = {
+                ',': '，', ':': '：', ';': '；',
+                '!': '！', '?': '？',
+            }
+            # 句点特殊处理：区分句号和小数点
+            # 中文字后的 . → 。
+            # 数字后的 . → 保留（小数点）
+            
+            for para in doc.paragraphs:
+                for run in para.runs:
+                    text = run.text
+                    new_text = text
+                    # 中文字后的逗号冒号分号感叹号问号
+                    for half, full in punct_map.items():
+                        new_text = re.sub(f'([\\u4e00-\\u9fff]){re.escape(half)}', f'\\1{full}', new_text)
+                    # 中文字后的句点（排除数字后的）
+                    new_text = re.sub(r'([\u4e00-\u9fff])\.(?!\d)', r'\1。', new_text)
+                    
+                    if new_text != text:
+                        fix_count += 1
+                        run.text = new_text
+            
+            # 保存
+            doc.save(str(self._manual_docx_path))
+            return fix_count
+        except Exception as e:
+            print(f"❌ 修复失败: {e}")
+            return 0
+
     def _rule_file_naming(self):
         """R-CO-03: 文件名规范"""
         workdir = Path(self.workdir)
@@ -1360,6 +1402,8 @@ def main():
                         help='验证模式（默认: full 全部验证）')
     parser.add_argument('--output', '-o',
                         help='输出报告到文件（可选）')
+    parser.add_argument('--fix-punctuation', action='store_true',
+                        help='修复中文正文中混用的半角标点为全角')
 
     args = parser.parse_args()
 
@@ -1368,6 +1412,15 @@ def main():
         software_name=args.software_name,
         version=args.version,
     )
+
+    # 修复模式优先
+    if args.fix_punctuation:
+        count = validator.fix_punctuation()
+        if count > 0:
+            print(f"✅ 已修复 {count} 处标点符号（半角→全角）")
+        else:
+            print("✅ 标点符号已全部为全角，无需修复")
+        sys.exit(0)
 
     validator.run_all()
 
