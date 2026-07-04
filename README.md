@@ -15,8 +15,8 @@
 | 你的 Agent | 兼容 | 安装方式 |
 |---|---|---|
 | **OpenCode** | ✅ | `帮我安装 https://github.com/geek-fun/moli-skills` |
-| **Claude Code** | 🔜 | 规划中 |
-| **Cursor / Windsurf** | 🔜 | 规划中 |
+| **Claude Code** | ✅ | `claude --plugin path/to/moli-skills/claude` |
+| **Cursor / Windsurf** | ✅ | 将 `cursor/rules/` 复制到项目 `.cursor/rules/` |
 | **Codex / Cline / Aider** | ✅ 通用 | 读取本说明，按步骤执行 |
 | **任何 LLM** | ✅ 通用 | 读取 `instructions/moli-cn-copyright.md` 并按指引操作 |
 
@@ -73,8 +73,11 @@ moli-skills/
 │   └── moli-cn-copyright.md
 ├── opencode/               ← OpenCode 适配层
 │   └── SKILL.md
-├── claude/                 ← Claude Code 适配层 (🔜)
-├── cursor/                 ← Cursor 适配层 (🔜)
+├── claude/                 ← Claude Code 适配层
+│   ├── plugin.json
+│   └── skills/
+├── cursor/                 ← Cursor / Windsurf 适配层
+│   └── rules/
 ├── moli-cn-copyright/      ← 核心脚本与规范
 │   ├── scripts/            ← Python 辅助脚本
 │   ├── references/         ← 规范文档
