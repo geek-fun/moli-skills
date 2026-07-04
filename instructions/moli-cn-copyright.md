@@ -114,7 +114,11 @@ docs/moli/copyright-v1/
 - 剔除 node_modules、dist、build、mockData、模板文件
 
 **代码组织**
-- 按入口文件→页面→组件→API→工具函数排序
+- 按入口文件→根组件→配置→页面→组件→API→工具函数排序
+  - 入口文件排第一（main.ts / main.js / index.ts）
+  - 根组件第二（App.vue / App.jsx）
+  - 配置文件第三（pages.json / app.json / manifest.json）
+  - 然后按重要程度排页面文件
 
 ### 操作手册 DOCX 规范
 
