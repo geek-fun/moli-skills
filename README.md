@@ -48,6 +48,7 @@ iex ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercon
 |---|---|---|
 | `/moli-cn-copyright` | 生成软著材料 | OpenCode / Claude Code |
 | `/moli-cn-copyright-validate` | 验证已生成的材料 | OpenCode |
+| `/moli-cn-copyright-update` | 检查并升级到最新版本 | OpenCode |
 | `/moli-skills:validate` | 验证已生成的材料 | Claude Code |
 
 ### 工作流

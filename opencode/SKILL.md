@@ -30,3 +30,7 @@ git clone --depth=1 https://github.com/geek-fun/moli-skills.git ~/.moli-skills
 pip install python-docx
 export MOLI_SKILLS_DIR="$HOME/.moli-skills"
 ```
+
+## 更新
+
+告知用户：`/moli-cn-copyright-update` 检查并升级到最新版本。Agent 也可在加载技能时自动检查版本。

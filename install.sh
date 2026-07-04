@@ -49,6 +49,10 @@ else
     curl -sL "$TARBALL" | tar -xz -C "$INSTALL_DIR" --strip-components=1
 fi
 
+# 记录已安装版本
+echo "$VERSION" > "$INSTALL_DIR/VERSION.installed"
+echo -e "  ${GREEN}✅${NC} 版本: $VERSION"
+
 # ── 3. 安装依赖 ──
 echo -e "  ${BLUE}ℹ${NC} 安装 python-docx..."
 $PYTHON -m pip install python-docx --quiet 2>/dev/null && \
@@ -70,6 +74,14 @@ if [ ! -L "$AG_VAL_DIR/SKILL.md" ]; then
     mkdir -p "$(dirname "$AG_VAL_DIR")"
     ln -sfn "$INSTALL_DIR/opencode/validate" "$AG_VAL_DIR"
     echo -e "  ${GREEN}✅${NC} OpenCode: /moli-cn-copyright-validate"
+fi
+
+# OpenCode update command
+AG_UPD_DIR="$HOME/.agents/skills/moli-cn-copyright-update"
+if [ ! -L "$AG_UPD_DIR/SKILL.md" ]; then
+    mkdir -p "$(dirname "$AG_UPD_DIR")"
+    ln -sfn "$INSTALL_DIR/opencode/update" "$AG_UPD_DIR"
+    echo -e "  ${GREEN}✅${NC} OpenCode: /moli-cn-copyright-update"
 fi
 
 # OpenCode (alt): symlink to ~/.config/opencode/skills/moli-cn-copyright/

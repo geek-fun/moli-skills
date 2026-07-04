@@ -12,11 +12,19 @@
 
 import os
 import sys
+import json
+import urllib.request
 import argparse
 from pathlib import Path
 
 SKILLS_DIR = Path(os.environ.get("MOLI_SKILLS_DIR", Path(__file__).resolve().parent))
 VERSION = open(SKILLS_DIR / "VERSION").read().strip()
+REPO = "geek-fun/moli-skills"
+
+
+def cmd_validate(args: argparse.Namespace) -> int:
+    """运行软著材料合规验证"""
+    sys.path.insert(0, str(SKILLS_DIR / "moli-cn-copyright" / "scripts"))
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
@@ -73,6 +81,103 @@ def main() -> int:
 
     args = parser.parse_args()
     return args.func(args)
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    """检查并更新 moli-skills 到最新版本"""
+    return _do_update(check_only=args.check)
+
+
+def _get_latest_release() -> tuple[str | None, str | None]:
+    """查询最新 Release 版本号和下载地址"""
+    api = f"https://api.github.com/repos/{REPO}/releases/latest"
+    try:
+        resp = urllib.request.urlopen(api, timeout=10)
+        data = json.loads(resp.read())
+        tag = data.get("tag_name")
+        tarball = data.get("tarball_url")
+        return tag, tarball
+    except Exception as e:
+        print(f"❌ 查询失败: {e}")
+        return None, None
+
+
+def _do_update(check_only: bool = False) -> int:
+    local_version = (SKILLS_DIR / "VERSION.installed").read_text().strip() if (SKILLS_DIR / "VERSION.installed").exists() else f"v{VERSION}"
+    print(f"当前版本: {local_version}")
+
+    remote_tag, remote_url = _get_latest_release()
+    if not remote_tag:
+        return 1
+
+    print(f"最新版本: {remote_tag}")
+
+    if remote_tag == local_version:
+        print("✅ 已是最新版本")
+        return 0
+
+    print(f"📦 新版本可用: {local_version} → {remote_tag}")
+    if check_only:
+        print("  运行 `moli update` 升级")
+        return 0
+
+    # 执行更新
+    import subprocess
+    import shutil
+
+    print(f"  ℹ 下载 {remote_tag}...")
+    temp_dir = SKILLS_DIR.with_name(SKILLS_DIR.name + ".tmp")
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir)
+
+    try:
+        subprocess.run(
+            ["curl", "-sL", remote_url],
+            capture_output=True, check=True,
+        )
+        # 下载并解压
+        import tarfile
+        resp = urllib.request.urlopen(remote_url, timeout=30)
+        with tarfile.open(fileobj=resp, mode="r:gz") as tar:
+            tar.extractall(path=temp_dir)
+        # 找到解压后的目录（GitHub tarball 包含一个子目录）
+        extracted = list(temp_dir.iterdir())[0]
+        # 替换安装目录
+        shutil.rmtree(SKILLS_DIR)
+        shutil.copytree(extracted, SKILLS_DIR)
+        shutil.rmtree(temp_dir)
+        # 更新版本记录
+        (SKILLS_DIR / "VERSION.installed").write_text(remote_tag)
+        print(f"✅ 已升级到 {remote_tag}")
+        print("   重新打开终端或 source ~/.zshrc 使环境变量生效")
+        return 0
+    except Exception as e:
+        print(f"❌ 升级失败: {e}")
+        if temp_dir.exists():
+            shutil.rmtree(temp_dir)
+        return 1
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description=f"墨吏 v{VERSION} — AI 文书技能集",
+    )
+    parser.add_argument("--version", action="version", version=f"moli v{VERSION}")
+
+    sub = parser.add_subparsers(dest="command")
+    sub.required = True
+
+    # update / check-update
+    update = sub.add_parser("update", help="升级到最新版本")
+    update.set_defaults(func=cmd_update, check=False)
+
+    check = sub.add_parser("check-update", help="检查是否有新版本")
+    check.set_defaults(func=cmd_update, check=True)
+
+    # copyright
+    cp = sub.add_parser("copyright", help="软著申请相关命令")
+    cp_sub = cp.add_subparsers(dest="action")
+    cp_sub.required = True
 
 
 if __name__ == "__main__":
