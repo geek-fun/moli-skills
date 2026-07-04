@@ -956,6 +956,35 @@ class CopyrightValidator:
         except Exception as e:
             self.results.append(CheckResult("R-MA-13", True, "info", "UI控件检查", f"无法检查: {e}"))
 
+    def _rule_manual_punctuation(self):
+        """R-MA-14: 中文正文标点统一（全角中文标点，不混用半角）"""
+        if not self._manual_docx_path:
+            return
+        try:
+            text = self._read_docx_text(self._manual_docx_path)
+            import re
+            # 检查中文正文中混用的半角标点
+            # 场景：中文字符附近出现半角逗号、句号、冒号、分号、问号、感叹号
+            mixed = []
+            patterns = [
+                (r'[\u4e00-\u9fff][,]', '半角逗号在中文字后'),
+                (r'[\u4e00-\u9fff][:]', '半角冒号在中文字后'),
+                (r'[\u4e00-\u9fff][;]', '半角分号在中文字后'),
+                (r'[\u4e00-\u9fff][.]', '半角句号在中文字后'),
+                (r'[\u4e00-\u9fff][!]', '半角感叹号在中文字后'),
+                (r'[\u4e00-\u9fff][?]', '半角问号在中文字后'),
+            ]
+            for pat, desc in patterns:
+                matches = re.findall(pat, text)
+                if matches:
+                    mixed.append(f"{desc}({len(matches)}处)")
+            
+            passed = len(mixed) == 0
+            detail = "✅ 中文标点统一使用全角符号" if passed else "❌ " + "; ".join(mixed[:5])
+            self.results.append(CheckResult("R-MA-14", passed, "warning", "中文正文标点统一（全角，参考GB/T 15834）", detail))
+        except Exception as e:
+            self.results.append(CheckResult("R-MA-14", True, "info", "标点检查", f"无法检查: {e}"))
+
     def _rule_file_naming(self):
         """R-CO-03: 文件名规范"""
         workdir = Path(self.workdir)
@@ -1194,6 +1223,7 @@ class CopyrightValidator:
             self._rule_docx_structure()
             self._rule_manual_step_count()
             self._rule_manual_ui_controls()
+            self._rule_manual_punctuation()
 
         # Phase 3: Application
         self._rule_application_exists()
