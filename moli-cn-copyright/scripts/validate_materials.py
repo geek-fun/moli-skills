@@ -484,8 +484,10 @@ class CopyrightValidator:
             section_breaks = max(0, len(doc.sections) - 1)
             table_rows = sum(len(t.rows) for t in doc.tables)
             table_chars = table_rows * 40
-            total_text = len(text) + table_chars
-            est_content_pages = max(1, total_text // 800)
+            # Each paragraph adds spacing overhead (1.5 line spacing)
+            para_count = len(doc.paragraphs)
+            total_text = len(text) + table_chars + para_count * 80
+            est_content_pages = max(1, total_text // 900)
             total_est = max(page_breaks_xml + section_breaks + 1, est_content_pages)
             passed = total_est >= 15
             self.results.append(CheckResult(
