@@ -508,45 +508,112 @@ class CopyrightValidator:
         ))
 
     def _rule_manual_no_ai_speak(self):
-        """R-MA-06: 无AI味套话"""
+        """R-MA-06: 无AI味套话（中文20类模式检测）"""
         if not self._manual_docx_path:
             return
         text = self._read_docx_text(self._manual_docx_path)
-        ai_phrases = [
-            '旨在', '赋能', '一站式', '高效便捷', '显著提升', '强大能力',
-            '丰富功能', '智能化', '完美解决方案', '业界领先',
-            '革命性', '前所未有的',
+
+        # Sources: B1lli/remove-ai-flavor, op7418/humanizer-zh, leeguooooo/stop-slop-zh, blader/humanizer
+
+        # Category 1: Binary contrast shells (否定对比壳)
+        binary_patterns = [
+            '不是', '而是', '并非', '不在于', '不只是', '更是', '与其说',
+            '不仅仅是', '不是.', '而是.', '并非.',
         ]
-        # Extended AI pattern detection from humanizer-zh
-        ai_patterns = [
-            '此外', '至关重要', '深入探讨', '强调', '持久的', '格局',
-            '关键性的', '展示', '宝贵的', '充满活力的',
-            '值得注意的是', '不可否认的是', '众所周知',
-            '不仅仅是一个', '更是', '不仅仅是', '更是对',
-            '提供了无缝', '直观和', '强大的',
-            '为……带来了', '为……提供了',
+
+        # Category 2: Essence claims (本质断言)
+        essence_patterns = [
+            '真正重要的是', '真正决定', '本质上', '核心在于', '底层逻辑',
+            '说白了', '归根结底',
         ]
-        found_phrases = [p for p in ai_phrases if p in text]
-        found_patterns = [p for p in ai_patterns if p in text]
-        total_found = found_phrases + [p for p in found_patterns if p not in found_phrases]
 
-        # Count em dashes
-        em_dash_count = text.count('——')
-        triple_patterns = len(re.findall(r'\w+、\w+和\w+', text))  # "无缝、直观和强大"
+        # Category 3: AI high-frequency vocabulary (AI高频词)
+        ai_vocab = [
+            '此外', '至关重要', '深入探讨', '强调', '格局', '关键性的',
+            '展示', '宝贵的', '充满活力的', '无缝', '不可或缺', '弥足珍贵',
+        ]
 
-        details = []
-        if total_found:
-            details.append(f"AI套话({len(total_found)}处): {', '.join(total_found[:8])}")
-        if em_dash_count > 5:
-            details.append(f"破折号({em_dash_count}个) ⚠️ 过多")
-        if triple_patterns > 3:
-            details.append(f"三段式({triple_patterns}处) ⚠️ 'X、Y和Z'模式过多")
+        # Category 4: Filler phrases (填充短语)
+        filler = [
+            '值得注意的是', '值得一提的是', '不可否认的是', '众所周知',
+            '毫无疑问', '不容忽视', '显而易见', '由此可见', '总的来说',
+        ]
 
-        passed = len(total_found) == 0
+        # Category 5: Assistant route markers (路标词)
+        route_markers = [
+            '下面我们来', '接下来我们', '我们可以看到', '让我为你',
+            '在开始之前', '在进入正题之前', '言归正传', '说到这里',
+        ]
+
+        # Category 6: Cliche openings (开场套话)
+        cliche_openings = [
+            '在当今', '随着', '在这个信息爆炸的时代',
+            '在科技日新月异的今天', '众所周知', '自古以来',
+        ]
+
+        # Category 7: Degree adverbs (程度副词)
+        degree_adverbs = [
+            '非常', '十分', '极其', '相当', '特别', '格外', '显著', '巨大',
+        ]
+
+        # Category 8: Universal positive conclusions (鸡汤收尾)
+        uplifting_endings = [
+            '未来可期', '共创美好', '携手前行', '向阳而生', '不负韶华',
+            '你值得拥有', '心之所向',
+        ]
+
+        # Category 9: Empty emphasis shells (强调虚壳)
+        empty_emphasis = [
+            '我们相信', '我们坚信', '必须认识到', '需要明白的是',
+            '需要指出的是', '必须承认',
+        ]
+
+        # Category 10: Translation-ese (英译腔)
+        translation_ese = [
+            '见证了', '这强调了', '这突出了', '这展示了',
+            '作为一个', '在...的背景下',
+        ]
+
+        # Collect all hits
+        all_categories = {
+            '否定对比壳': binary_patterns,
+            '本质断言': essence_patterns,
+            'AI高频词': ai_vocab,
+            '填充短语': filler,
+            '路标词': route_markers,
+            '开场套话': cliche_openings,
+            '程度副词': degree_adverbs,
+            '鸡汤收尾': uplifting_endings,
+            '强调虚壳': empty_emphasis,
+            '英译腔': translation_ese,
+        }
+
+        findings = []
+        for category, patterns in all_categories.items():
+            hits = [p for p in patterns if p in text]
+            if hits:
+                findings.append(f"{category}({len(hits)}处): {', '.join(hits[:4])}")
+
+        # Check em dashes
+        em_dash_count = len(re.findall(r'——', text))
+        if em_dash_count > 3:
+            findings.append(f"破折号({em_dash_count}个) ⚠️")
+
+        # Check triple patterns: "A、B和C"
+        triple_count = len(re.findall(r'[\u4e00-\u9fff]+[、][\u4e00-\u9fff]+和[\u4e00-\u9fff]+', text))
+        if triple_count > 2:
+            findings.append(f"三段式({triple_count}处) ⚠️ 'X、Y和Z'")
+
+        # Check "不仅...更是" pattern
+        not_only = len(re.findall(r'不仅.{0,8}(更是|还是|也是)', text))
+        if not_only > 0:
+            findings.append(f"不仅...更是({not_only}处) ⚠️")
+
+        passed = len([f for f in findings if '处' in f]) == 0 and em_dash_count <= 3
         self.results.append(CheckResult(
             "R-MA-06", passed, "warning",
-            "操作手册无AI味套话（24种模式检测）",
-            " | ".join(details) if details else "✅ 无AI套话"
+            "操作手册无AI味套话（中文20类模式检测）",
+            " | ".join(findings) if findings else "✅ 无AI套话"
         ))
 
     # ══════════════════════════════════════════════════════
