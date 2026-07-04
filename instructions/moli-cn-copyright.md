@@ -146,49 +146,55 @@ docs/moli/
    请 review 并补充：
    1. 操作手册截图 → 放入 截图/ 目录
    2. 检查内容是否准确
-   3. 修改完成后运行 validate 检查合规
+   3. 完成后告诉我，我来帮你验证
 ```
 
-## Step 6: Validate
+## Step 6: Validate（Agent 执行）
 
-用户修改完成后，告知用户如何运行验证：
+用户告知 review 完成后，Agent 自动运行验证：
 
 ```bash
+# 这条命令由 Agent 执行，用户不需要知道
 python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
   --workdir docs/moli/copyright-v1/正式资料 \
   --software-name "xxx软件" \
   --version V1.0
 ```
 
-输出示例：
+将结果以可读格式呈现给用户：
 
 ```
+🔍 验证结果：
   ✅ R-SC-01 源代码PDF文件存在
   ✅ R-SC-02 源代码PDF页数 = 60
   ❌ R-SC-03 页眉包含软件名称和版本号
-        软件名称: ❌
-        版本号: ✅
-        页眉预览: xxx软件 V1.0 源代码
-        问题: 页眉包含"源代码"字样，应去掉
-  
-  总计: 19 | ✅ 通过: 17 | ❌ 错误: 2
+        问题: 页眉包含"源代码"字样
+  ✅ R-SC-04 源代码无连续空行
+  ...
+
+  通过 17/19 | ❌ 错误 2 | ⚠️ 警告 0
 ```
 
-## Step 7: Fix
+## Step 7: Fix（Agent 执行）
 
-根据 validate 报告中的 ❌ 错误，逐条修复：
+根据 ❌ 错误逐条修复。修复后重新运行 validate，直到全部通过：
 
-```bash
-# 修复后重新验证
-python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
-  --workdir docs/moli/copyright-v2/正式资料 \
-  --software-name "xxx软件" \
-  --version V1.0
 ```
-
-**直到所有 ❌ 修复为 ✅，材料方可提交。**
+🔄 修复页眉 → 重新验证 → 19/19 全部通过 ✅
+   材料可以提交了！
+```
 
 ---
+
+## 用户视角的工作流（只看得到这些）
+
+```
+你 → "帮我生成软著材料"
+   → AI 检查环境 → 扫描项目 → 问 3 个问题 → 生成 → "好了，看看 docs/moli/copyright-v1/"
+
+你 → review 并补截图 → "帮我验证软著材料"
+   → AI 跑检查 → 报告结果 → 修复 → "19/19 通过 ✅ 可以提交了"
+```
 
 ## Appendix: 辅助脚本
 

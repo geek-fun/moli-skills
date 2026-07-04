@@ -1,6 +1,6 @@
 ---
 name: moli-cn-copyright
-description: 生成中国软件著作权（软著）全套申请材料。用户提到"软著"、"软件著作权"、"版权登记"、"软著申请"、"生成绩软著材料"时使用。AI 自动分析项目代码，生成程序鉴别材料（源代码PDF）和文档鉴别材料（用户操作手册）。
+description: 生成中国软件著作权（软著）全套申请材料。用户提到"软著"、"软件著作权"、"版权登记"、"软著申请"、"生成软著材料"时使用。AI 自动分析项目代码，生成程序鉴别材料（源代码PDF）和文档鉴别材料（用户操作手册）。
 license: Apache-2.0
 compatibility: opencode
 metadata:
@@ -20,8 +20,8 @@ metadata:
 3. **ask unclear** — 向用户确认名称/版本/截图方式（最多 3 项）
 4. **generate** — 生成源代码 PDF + 操作手册 DOCX → `docs/moli/copyright-v1/`
 5. **review** — 告知用户查看结果，补充截图，修改内容
-6. **validate** — 用户运行 `validate_materials.py` 检查合规（见下方说明）
-7. **fix** — 根据验证结果修复问题，重复直到全部通过
+6. **validate** — 用户说"帮我验证"，Agent 自动运行检查并报告结果
+7. **fix** — Agent 根据验证结果自动修复，重复直到全部通过
 
 ## 安装
 
@@ -30,16 +30,3 @@ git clone --depth=1 https://github.com/geek-fun/moli-skills.git ~/.moli-skills
 pip install python-docx
 export MOLI_SKILLS_DIR="$HOME/.moli-skills"
 ```
-
-## Validate（用户执行）
-
-生成并 review 完成后，告知用户运行验证：
-
-```bash
-python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
-  --workdir docs/moli/copyright-v1/正式资料 \
-  --software-name "xxx软件" \
-  --version V1.0
-```
-
-根据 ❌ 错误修复后重新验证，直到全部通过方可提交。
