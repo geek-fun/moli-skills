@@ -11,17 +11,45 @@
 | 文章润色 | `moli-write-polish` | 文章润色与修改 | 🔜 |
 | 小红书文案 | `moli-write-xiaohongshu` | 小红书内容创作 | 🔜 |
 
-## 快速开始：软著申请
+## 安装
+
+### 方式一：一键安装（推荐）
+
+```bash
+curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
+```
+
+自动完成：克隆仓库 → 安装依赖 → 配置环境变量。
+
+### 方式二：手动
+
+```bash
+git clone --depth=1 https://github.com/geek-fun/moli-skills.git ~/.moli-skills
+pip install python-docx
+echo 'export MOLI_SKILLS_DIR="$HOME/.moli-skills"' >> ~/.zshrc
+```
+
+### 方式三：OpenCode 直接引用
+
+配置 `.opencode/skills.yml` 指向本地路径即可。
+
+## 使用：软著申请
+
+### 在 OpenCode 中使用
 
 ```typescript
-// 在 OpenCode 中
 task({
   load_skills: ["moli-cn-copyright"],
   prompt: "为当前项目生成软著申请材料"
 })
+// 或直接说： "用 moli-cn-copyright 生成软著"
+```
 
-// 或直接说
-"用 moli-cn-copyright 生成软著"
+### 独立运行（验证）
+
+```bash
+python3 $MOLI_SKILLS_DIR/moli-cn-copyright/scripts/validate_materials.py \
+  --software-name "xxx软件" --version V1.0
 ```
 
 ### 一条命令，四步完成
@@ -45,15 +73,6 @@ docs/moli/
 ├── copyright-v2/                    ← 修订版
 ├── 修订历史.md
 └── copyright-latest -> copyright-v2
-```
-
-### 验证
-
-生成后自动执行 33 条规则合规检查：
-
-```bash
-python3 moli-cn-copyright/scripts/validate_materials.py \
-  --software-name "xxx软件" --version V1.0
 ```
 
 ## 架构
