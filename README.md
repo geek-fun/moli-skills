@@ -13,25 +13,40 @@
 
 ## 安装
 
-### 方式一：一键安装（推荐）
+### 告诉你的 Agent
+
+```
+帮我安装 https://github.com/geek-fun/moli-skills
+```
+
+Agent 会自动：
+1. 读取本页安装说明
+2. 克隆仓库到 `~/.moli-skills`
+3. 安装 `python-docx`
+4. 配置 `MOLI_SKILLS_DIR` 环境变量
+5. 验证安装成功
+
+### 手动安装
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
 ```
 
-自动完成：克隆仓库 → 安装依赖 → 配置环境变量。
-
-### 方式二：手动
+### 安装脚本执行的内容（供 Agent 参考）
 
 ```bash
+# 克隆
 git clone --depth=1 https://github.com/geek-fun/moli-skills.git ~/.moli-skills
+
+# 依赖
 pip install python-docx
+
+# 环境变量
 echo 'export MOLI_SKILLS_DIR="$HOME/.moli-skills"' >> ~/.zshrc
+
+# 验证
+python3 ~/.moli-skills/moli-cn-copyright/scripts/validate_materials.py --help
 ```
-
-### 方式三：OpenCode 直接引用
-
-配置 `.opencode/skills.yml` 指向本地路径即可。
 
 ## 使用：软著申请
 
