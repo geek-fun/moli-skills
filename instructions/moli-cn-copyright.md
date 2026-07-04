@@ -114,7 +114,6 @@ docs/moli/copyright-v1/
 - 剔除 node_modules、dist、build、mockData、模板文件
 
 **代码组织**
-- 每个文件前加路径标记：`// ========== path/to/file.js ==========`（不计入行数）
 - 按入口文件→页面→组件→API→工具函数排序
 
 ### 操作手册 DOCX 规范
