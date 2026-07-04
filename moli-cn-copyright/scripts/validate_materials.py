@@ -517,12 +517,36 @@ class CopyrightValidator:
             '丰富功能', '智能化', '完美解决方案', '业界领先',
             '革命性', '前所未有的',
         ]
-        found = [p for p in ai_phrases if p in text]
-        passed = len(found) == 0
+        # Extended AI pattern detection from humanizer-zh
+        ai_patterns = [
+            '此外', '至关重要', '深入探讨', '强调', '持久的', '格局',
+            '关键性的', '展示', '宝贵的', '充满活力的',
+            '值得注意的是', '不可否认的是', '众所周知',
+            '不仅仅是一个', '更是', '不仅仅是', '更是对',
+            '提供了无缝', '直观和', '强大的',
+            '为……带来了', '为……提供了',
+        ]
+        found_phrases = [p for p in ai_phrases if p in text]
+        found_patterns = [p for p in ai_patterns if p in text]
+        total_found = found_phrases + [p for p in found_patterns if p not in found_phrases]
+
+        # Count em dashes
+        em_dash_count = text.count('——')
+        triple_patterns = len(re.findall(r'\w+、\w+和\w+', text))  # "无缝、直观和强大"
+
+        details = []
+        if total_found:
+            details.append(f"AI套话({len(total_found)}处): {', '.join(total_found[:8])}")
+        if em_dash_count > 5:
+            details.append(f"破折号({em_dash_count}个) ⚠️ 过多")
+        if triple_patterns > 3:
+            details.append(f"三段式({triple_patterns}处) ⚠️ 'X、Y和Z'模式过多")
+
+        passed = len(total_found) == 0
         self.results.append(CheckResult(
             "R-MA-06", passed, "warning",
-            "操作手册无AI味套话（旨在/赋能/一站式等）",
-            f"发现 {len(found)} 个AI套话: {', '.join(found) if found else '✅ 无'}"
+            "操作手册无AI味套话（24种模式检测）",
+            " | ".join(details) if details else "✅ 无AI套话"
         ))
 
     # ══════════════════════════════════════════════════════
