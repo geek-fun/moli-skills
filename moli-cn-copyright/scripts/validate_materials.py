@@ -739,26 +739,19 @@ class CopyrightValidator:
         if not self._manual_docx_path:
             return
         try:
-            xml = open(self._manual_docx_path, 'rb').read().decode('utf-8', errors='ignore')
-            has_toc = 'TOC' in xml and 'instrText' in xml
-            # Check if there's a hardcoded numbered list that looks like a TOC
-            has_hardcoded_toc = False
-            text = self._read_docx_text(self._manual_docx_path)
-            toc_keywords = ['一、', '二、', '三、', '四、', '五、']
-            h1_count = sum(1 for k in toc_keywords if k in text)
-            if h1_count >= 3:
-                # Check if these appear in the first 20% of the document
-                lines = text.split('\n')
-                first_quarter = '\n'.join(lines[:max(20, len(lines)//4)])
-                h1_in_first = sum(1 for k in toc_keywords if k in first_quarter)
-                has_hardcoded_toc = h1_in_first >= 3
+            import zipfile
+            with zipfile.ZipFile(self._manual_docx_path, 'r') as z:
+                # 读取 document.xml 查找域代码
+                if 'word/document.xml' in z.namelist():
+                    xml = z.read('word/document.xml').decode('utf-8', errors='ignore')
+                    has_toc = 'TOC' in xml and 'instrText' in xml
+                    passed = has_toc
+                    detail = f"TOC域代码: {'✅ 已设置' if has_toc else '❌ 未找到，请在Word中插入自动目录'}"
+                else:
+                    passed = False
+                    detail = "❌ 无法读取DOCX内容"
             
-            passed = has_toc
-            detail = f"TOC域代码: {'✅' if has_toc else '❌ 使用Word自动目录(插入→目录)'}"
-            if has_hardcoded_toc and not has_toc:
-                detail += " | ⚠️ 检测到手写目录列表"
-            
-            self.results.append(CheckResult("R-MA-08", passed, "warning", "DOCX使用自动目录（TOC域代码建议）", detail))
+            self.results.append(CheckResult("R-MA-08", passed, "warning", "DOCX使用自动目录（TOC域代码）", detail))
         except Exception as e:
             self.results.append(CheckResult("R-MA-08", True, "info", "DOCX自动目录检查", f"无法检查: {e}"))
 
@@ -767,12 +760,23 @@ class CopyrightValidator:
         if not self._manual_docx_path:
             return
         try:
-            xml = open(self._manual_docx_path, 'rb').read().decode('utf-8', errors='ignore')
-            has_page_field = 'PAGE' in xml
-            has_numpages_field = 'NUMPAGES' in xml
-            passed = has_page_field
-            detail = f"PAGE域: {'✅' if has_page_field else '❌ 页眉页码应使用PAGE域代码'} | NUMPAGES域: {'✅' if has_numpages_field else '⚠️ 建议使用NUMPAGES域'}"
-            self.results.append(CheckResult("R-MA-09", passed, "warning", "页眉页码使用Word域代码（建议）", detail))
+            import zipfile
+            with zipfile.ZipFile(self._manual_docx_path, 'r') as z:
+                # 检查 header 相关 XML
+                header_files = [n for n in z.namelist() if 'header' in n and n.endswith('.xml')]
+                all_xml = ''
+                for hf in header_files:
+                    all_xml += z.read(hf).decode('utf-8', errors='ignore')
+                # 也检查 document.xml (页眉可能内联)
+                if 'word/document.xml' in z.namelist():
+                    all_xml += z.read('word/document.xml').decode('utf-8', errors='ignore')
+                
+                has_page = 'PAGE' in all_xml
+                has_numpages = 'NUMPAGES' in all_xml
+                passed = has_page
+                detail = f"PAGE域: {'✅' if has_page else '❌ 未找到'} | NUMPAGES域: {'✅' if has_numpages else '⚠️ 建议添加'}"
+            
+            self.results.append(CheckResult("R-MA-09", passed, "warning", "页眉页码使用Word域代码", detail))
         except Exception as e:
             self.results.append(CheckResult("R-MA-09", True, "info", "页眉页码检查", f"无法检查: {e}"))
 
