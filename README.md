@@ -10,29 +10,31 @@
 | `moli-cn-patent` | 专利申请材料生成 | 🔜 |
 | `moli-write-polish` | 文章润色 | 🔜 |
 
-## 安装与 Agent 兼容
+## 安装
 
-| 你的 Agent | 兼容 | 安装方式 |
-|---|---|---|
-| **OpenCode** | ✅ | `帮我安装 https://github.com/geek-fun/moli-skills` |
-| **Claude Code** | ✅ | `claude --plugin path/to/moli-skills/claude` |
-| **Cursor / Windsurf** | ✅ | 将 `cursor/rules/` 复制到项目 `.cursor/rules/` |
-| **Codex / Cline / Aider** | ✅ 通用 | 读取本说明，按步骤执行 |
-| **任何 LLM** | ✅ 通用 | 读取 `instructions/moli-cn-copyright.md` 并按指引操作 |
+告诉你的 agent：
 
-以上 Agent 均可通过以下命令安装依赖：
-
-```bash
-git clone --depth=1 https://github.com/geek-fun/moli-skills.git ~/.moli-skills
-pip install python-docx
-export MOLI_SKILLS_DIR="$HOME/.moli-skills"
+```
+帮我安装 https://github.com/geek-fun/moli-skills
 ```
 
-或一键脚本：
+任何 agent（OpenCode、Claude Code、Cursor 等）都会读取本说明，自动完成：克隆 → 装依赖 → 配环境。无需手动操作。
+
+手动安装：
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
 ```
+
+### Agent 适配说明
+
+各平台适配文件已就绪，agent 安装时会自动参考：
+
+| Agent | 适配文件 | 作用 |
+|---|---|---|
+| OpenCode | `opencode/SKILL.md` | skill 加载入口 |
+| Claude Code | `claude/plugin.json` | skill 加载入口 |
+| Cursor / Windsurf | `cursor/rules/` | 规则触发配置 |
 
 ## 使用：软著申请
 
