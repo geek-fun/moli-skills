@@ -2,57 +2,37 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [master]
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+
+      - name: 生成 Changelog
+        uses: jaywcjlove/changelog-generator@main
+        id: changelog
         with:
-          python-version: '3.11'
-
-      - name: 提取版本号
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-      - name: 运行 CI 检查
-        run: |
-          pip install python-docx
-          for f in moli-cn-copyright/scripts/*.py; do
-            python3 -m py_compile "$f"
-          done
-          python3 cli.py --version
-
-      - name: 生成 Release Notes
-        run: |
-          cat > /tmp/release-notes.md << 'EOF'
-          # 墨吏 moli-skills v${{ steps.version.outputs.VERSION }}
-
-          ## 安装
-
-          ```bash
-          curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
-          ```
-
-          ## 主要功能
-
-          - `/moli-cn-copyright` — AI 自动生成软著全套材料
-          - `/moli-cn-copyright-validate` — 验证已生成的材料
-          - 33 条合规规则 + 100+ AI 模式检测
-          - 支持 OpenCode / Claude Code / Cursor
-
-          详见 README。
-          EOF
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 创建 Release
-        uses: softprops/action-gh-release@v2
+        uses: jaywcjlove/create-tag-action@main
         with:
-          name: moli-skills v${{ steps.version.outputs.VERSION }}
-          body_path: /tmp/release-notes.md
-          files: |
-            install.sh
-            requirements.txt
-          generate_release_notes: false
+          package-path: ./package.json
+          release: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            ${{ steps.changelog.outputs.compareurl }}
+
+            ## 安装
+
+            ```bash
+            curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/v${{ steps.changelog.outputs.version }}/install.sh | bash
+            ```
+
+            ## 更新内容
+
+            ${{ steps.changelog.outputs.changelog }}
