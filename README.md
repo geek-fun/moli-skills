@@ -18,7 +18,7 @@
 帮我安装 https://github.com/geek-fun/moli-skills
 ```
 
-任何 agent 都会读取本说明，自动完成。也可手动运行：
+任何 agent 都会读取本说明，自动完成。也可手动：
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.sh | bash
@@ -38,23 +38,29 @@ curl -sSL https://raw.githubusercontent.com/geek-fun/moli-skills/master/install.
 
 ### 第一步：生成
 
-告诉你的 agent：
+直接告诉 agent：
 
 ```
-帮我用 moli-cn-copyright 生成软著申请材料
+帮我申请软著
 ```
 
-AI 自动完成环境检查、源码扫描、确认信息、生成材料。
+或：
+
+```
+生成软著材料
+```
+
+Agent 自动匹配 `moli-cn-copyright` 技能，完成环境检查、源码扫描、确认信息、生成材料。
 
 ### 第二步：验证
 
-你补充截图、修改内容后，告诉 agent：
+你补充截图、修改内容后：
 
 ```
 帮我验证软著材料
 ```
 
-AI 自动运行 33 条规则检查，发现问题自动修复，直到全部通过。
+Agent 自动运行 33 条规则检查，发现问题自动修复，直到全部通过。
 
 ### 完整流程
 
