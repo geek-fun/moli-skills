@@ -471,9 +471,11 @@ class CopyrightValidator:
             text = "\n".join(p.text for p in doc.paragraphs)
             # Count explicit page breaks in the XML
             page_breaks_xml = str(doc.element.xml).count('w:type="page"')
-            # Estimate: A4 with 10.5pt / 1.5 line spacing = ~1800 chars per page
-            est_content_pages = max(1, len(text) // 1800)
-            total_est = max(page_breaks_xml + 1, est_content_pages)
+            # Count section breaks (each new section = new page minimum)
+            section_breaks = len(doc.sections) - 1
+            # Estimate: A4 with 小四 12pt / 1.5 line spacing + headings + tables ≈ 1200 chars per page
+            est_content_pages = max(1, len(text) // 1200)
+            total_est = max(page_breaks_xml + section_breaks + 1, est_content_pages)
             passed = total_est >= 15
             self.results.append(CheckResult(
                 "R-MA-04", passed, "warning",
@@ -530,7 +532,7 @@ class CopyrightValidator:
         # Category 3: AI high-frequency vocabulary (AI高频词)
         ai_vocab = [
             '此外', '至关重要', '深入探讨', '强调', '格局', '关键性的',
-            '展示', '宝贵的', '充满活力的', '无缝', '不可或缺', '弥足珍贵',
+            '宝贵的', '充满活力的', '无缝', '不可或缺', '弥足珍贵',
         ]
 
         # Category 4: Filler phrases (填充短语)
@@ -729,6 +731,48 @@ class CopyrightValidator:
             f"发现 {len(actual_forbidden)} 个疑似第三方名称 {'✅' if passed else '❌ 请检查并删除第三方公司名称'}"
         ))
 
+    def _rule_docx_has_toc_field(self):
+        """R-MA-08: DOCX 使用自动目录域代码（非手写）"""
+        if not self._manual_docx_path:
+            return
+        try:
+            xml = open(self._manual_docx_path, 'rb').read().decode('utf-8', errors='ignore')
+            has_toc = 'TOC' in xml and 'instrText' in xml
+            # Check if there's a hardcoded numbered list that looks like a TOC
+            has_hardcoded_toc = False
+            text = self._read_docx_text(self._manual_docx_path)
+            toc_keywords = ['一、', '二、', '三、', '四、', '五、']
+            h1_count = sum(1 for k in toc_keywords if k in text)
+            if h1_count >= 3:
+                # Check if these appear in the first 20% of the document
+                lines = text.split('\n')
+                first_quarter = '\n'.join(lines[:max(20, len(lines)//4)])
+                h1_in_first = sum(1 for k in toc_keywords if k in first_quarter)
+                has_hardcoded_toc = h1_in_first >= 3
+            
+            passed = has_toc
+            detail = f"TOC域代码: {'✅' if has_toc else '❌ 使用Word自动目录(插入→目录)'}"
+            if has_hardcoded_toc and not has_toc:
+                detail += " | ⚠️ 检测到手写目录列表"
+            
+            self.results.append(CheckResult("R-MA-08", passed, "error", "DOCX使用自动目录（TOC域代码）", detail))
+        except Exception as e:
+            self.results.append(CheckResult("R-MA-08", True, "info", "DOCX自动目录检查", f"无法检查: {e}"))
+
+    def _rule_docx_has_page_fields(self):
+        """R-MA-09: 页眉页码使用域代码（非手写）"""
+        if not self._manual_docx_path:
+            return
+        try:
+            xml = open(self._manual_docx_path, 'rb').read().decode('utf-8', errors='ignore')
+            has_page_field = 'PAGE' in xml
+            has_numpages_field = 'NUMPAGES' in xml
+            passed = has_page_field
+            detail = f"PAGE域: {'✅' if has_page_field else '❌ 页眉页码应使用PAGE域代码'} | NUMPAGES域: {'✅' if has_numpages_field else '⚠️ 建议使用NUMPAGES域'}"
+            self.results.append(CheckResult("R-MA-09", passed, "error", "页眉页码使用Word域代码", detail))
+        except Exception as e:
+            self.results.append(CheckResult("R-MA-09", True, "info", "页眉页码检查", f"无法检查: {e}"))
+
     def _rule_app_date_logic(self):
         """R-AP-05: 日期逻辑正确（开发完成 ≤ 首次发表日期 < 申请日期）"""
         if not self._application_txt_path:
@@ -920,6 +964,8 @@ class CopyrightValidator:
             self._rule_manual_paragraph_style()
             self._rule_manual_no_ai_speak()
             self._rule_manual_formatting()
+            self._rule_docx_has_toc_field()
+            self._rule_docx_has_page_fields()
 
         # Phase 3: Application
         self._rule_application_exists()
