@@ -48,12 +48,20 @@ $PYTHON -m pip install python-docx --quiet 2>/dev/null && \
     echo -e "  ${YELLOW}⚠${NC} python-docx 安装失败，DOCX 生成将降级"
 
 # ── 4. 注册到各平台 ──
-# OpenCode: symlink to ~/.config/opencode/skills/moli-cn-copyright/
+# OpenCode: symlink to ~/.agents/skills/moli-cn-copyright/ (for /command support)
+AG_DIR="$HOME/.agents/skills/moli-cn-copyright"
+if [ ! -L "$AG_DIR/SKILL.md" ]; then
+    mkdir -p "$(dirname "$AG_DIR")"
+    ln -sfn "$INSTALL_DIR/opencode" "$AG_DIR"
+    echo -e "  ${GREEN}✅${NC} OpenCode: /moli-cn-copyright"
+fi
+
+# OpenCode (alt): symlink to ~/.config/opencode/skills/moli-cn-copyright/
 OC_DIR="$HOME/.config/opencode/skills/moli-cn-copyright"
 if [ ! -L "$OC_DIR/SKILL.md" ]; then
     mkdir -p "$(dirname "$OC_DIR")"
     ln -sfn "$INSTALL_DIR/opencode" "$OC_DIR"
-    echo -e "  ${GREEN}✅${NC} OpenCode: $OC_DIR"
+    echo -e "  ${GREEN}✅${NC} OpenCode (alt): $OC_DIR"
 fi
 
 # Claude Code: symlink to ~/.claude/plugins/moli-skills/
@@ -61,7 +69,7 @@ CC_DIR="$HOME/.claude/plugins/moli-skills"
 if [ ! -L "$CC_DIR" ]; then
     mkdir -p "$(dirname "$CC_DIR")"
     ln -sfn "$INSTALL_DIR/claude" "$CC_DIR"
-    echo -e "  ${GREEN}✅${NC} Claude Code: $CC_DIR"
+    echo -e "  ${GREEN}✅${NC} Claude Code: /moli-skills:copyright"
 fi
 
 # ── 5. 环境变量 ──
