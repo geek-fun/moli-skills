@@ -1008,9 +1008,35 @@ class CopyrightValidator:
                         new_text = re.sub(f'([\\u4e00-\\u9fff]){re.escape(half)}', f'\\1{full}', new_text)
                     # 中文字后的句点（排除数字后的小数点）
                     new_text = re.sub(r'([\u4e00-\u9fff])\.(?!\d)', r'\1。', new_text)
-                    # 半角引号包围中文 → 全角引号（左"中 → "中，右中" → 中"）
-                    new_text = re.sub(r'(?<=^|[^>\w])"([\u4e00-\u9fff])', '\u201c\\1', new_text)
-                    new_text = re.sub(r'([\u4e00-\u9fff])"(?=$|[^<\w])', '\\1\u201d', new_text)
+                    # 半角引号 → 全角引号（交替配对：左"右"左"右）
+                    parts = list(new_text)
+                    last_was_left = False  # 上一次是左引号？
+                    i = 0
+                    while i < len(parts):
+                        if parts[i] != '"':
+                            i += 1
+                            continue
+                        left_ctx = ''.join(parts[max(0,i-3):i])
+                        right_ctx = ''.join(parts[i+1:min(len(parts),i+4)])
+                        has_ch_left = bool(re.search(r'[\u4e00-\u9fff]', left_ctx))
+                        has_ch_right = bool(re.search(r'[\u4e00-\u9fff]', right_ctx))
+                        if not has_ch_left and has_ch_right:
+                            parts[i] = '\u201c'  # 左引号
+                            last_was_left = True
+                        elif has_ch_left and not has_ch_right:
+                            parts[i] = '\u201d'  # 右引号
+                            last_was_left = False
+                        elif has_ch_left and has_ch_right:
+                            # 两边都是中文，交替配对
+                            if last_was_left:
+                                parts[i] = '\u201d'  # 上一次是左 → 这次是右
+                                last_was_left = False
+                            else:
+                                parts[i] = '\u201c'  # 上一次是右 → 这次是左
+                                last_was_left = True
+                        # else: 两边都不是中文 → 保留
+                        i += 1
+                    new_text = ''.join(parts)
                     
                     if new_text != text:
                         fix_count += 1
