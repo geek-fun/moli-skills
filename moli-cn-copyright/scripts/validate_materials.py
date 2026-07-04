@@ -1012,7 +1012,10 @@ class CopyrightValidator:
         return "\n".join(lines)
 
 
-VERSION = "1.0.0"
+try:
+    VERSION = open(Path(__file__).resolve().parents[2] / "VERSION").read().strip()
+except (FileNotFoundError, OSError):
+    VERSION = "0.0.0"
 
 # ══════════════════════════════════════════════════════════════
 # CLI入口

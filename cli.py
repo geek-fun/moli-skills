@@ -16,7 +16,7 @@ import argparse
 from pathlib import Path
 
 SKILLS_DIR = Path(os.environ.get("MOLI_SKILLS_DIR", Path(__file__).resolve().parent))
-VERSION = "1.0.0"
+VERSION = open(SKILLS_DIR / "VERSION").read().strip()
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
